@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Аукционы</h1>
+
+<h2>Последние лоты</h2>
+<div class="row">
+    {% for lot in latest_lots %}
+    <div class="col-md-4">
+        <div class="card">
+            {% if lot.main_image %}
+            <img src="{{ lot.main_image.url }}" class="card-img-top" alt="{{ lot.title }}">
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">{{ lot.title }}</h5>
+                <p>Начальная цена: {{ lot.initial_price }}</p>
+                <p>Текущая цена: {{ lot.current_price|default:"Нет ставок" }}</p>
+                <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <p>Нет активных лотов.</p>
+    {% endfor %}
+</div>
+
+<h2>Другие лоты</h2>
+<div class="row">
+    {% for lot in other_lots %}
+    <div class="col-md-4">
+        <div class="card">
+            {% if lot.main_image %}
+            <img src="{{ lot.main_image.url }}" class="card-img-top" alt="{{ lot.title }}">
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">{{ lot.title }}</h5>
+                <p>Начальная цена: {{ lot.initial_price }}</p>
+                <p>Текущая цена: {{ lot.current_price|default:"Нет ставок" }}</p>
+                <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <p>Нет других лотов.</p>
+    {% endfor %}
+</div>
+{% endblock %}

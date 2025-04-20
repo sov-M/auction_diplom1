@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Мои лоты</h1>
+
+<h2>Активные лоты</h2>
+{% for lot in active_lots %}
+<div class="card">
+    <div class="card-body">
+        <h5>{{ lot.title }}</h5>
+        <p>Текущая цена: {{ lot.current_price|default:"Нет ставок" }}</p>
+        <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
+    </div>
+</div>
+{% empty %}
+<p>Нет активных лотов.</p>
+{% endfor %}
+
+<h2>Завершенные лоты</h2>
+{% for lot in finished_lots %}
+<div class="card">
+    <div class="card-body">
+        <h5>{{ lot.title }}</h5>
+        <p>Финальная цена: {{ lot.current_price|default:"Нет ставок" }}</p>
+        <h6>Последние 5 участников:</h6>
+        <ul>
+            {% for bid in recent_bidders.lot.pk %}
+            <li>{{ bid.user.email }} - {{ bid.amount }}</li>
+            {% empty %}
+            <li>Ставок не было</li>
+            {% endfor %}
+        </ul>
+        <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
+    </div>
+</div>
+{% empty %}
+<p>Нет завершенных лотов.</p>
+{% endfor %}
+{% endblock %}

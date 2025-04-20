@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>История участия</h1>
+
+<h2>Активные аукционы</h2>
+{% for lot in active_lots %}
+<div class="card">
+    <div class="card-body">
+        <h5>{{ lot.title }}</h5>
+        <p>Текущая цена: {{ lot.current_price|default:"Нет ставок" }}</p>
+        <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
+    </div>
+</div>
+{% empty %}
+<p>Нет активных аукционов.</p>
+{% endfor %}
+
+<h2>Все лоты, в которых вы участвовали</h2>
+{% for lot in participated_lots %}
+<div class="card">
+    <div class="card-body">
+        <h5>{{ lot.title }}</h5>
+        <p>Статус: {% if lot.is_active %}Активен{% else %}Завершен{% endif %}</p>
+        <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
+    </div>
+</div>
+{% empty %}
+<p>Вы не участвовали в аукционах.</p>
+{% endfor %}
+{% endblock %}

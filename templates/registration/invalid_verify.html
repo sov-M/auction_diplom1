@@ -1,0 +1,10 @@
+<!-- templates/registration/invalid_verify.html -->
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <p>Ваша ссылка не корректна, залогиньтесь снова</p>
+    <a href="{% url 'login' %}">Залогиниться</a>
+</div>
+{% endblock %}

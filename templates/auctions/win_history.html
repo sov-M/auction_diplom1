@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Выигранные и топ-5 лоты</h1>
+
+<h2>Выигранные лоты</h2>
+{% for lot in won_lots %}
+<div class="card">
+    <div class="card-body">
+        <h5>{{ lot.title }}</h5>
+        <p>Финальная цена: {{ lot.current_price }}</p>
+        <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
+    </div>
+</div>
+{% empty %}
+<p>Вы не выиграли лоты.</p>
+{% endfor %}
+
+<h2>Лоты, где вы были в топ-5</h2>
+{% for lot in top_five_lots %}
+<div class="card">
+    <div class="card-body">
+        <h5>{{ lot.title }}</h5>
+        <p>Финальная цена: {{ lot.current_price|default:"Нет ставок" }}</p>
+        <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
+    </div>
+</div>
+{% empty %}
+<p>Вы не входили в топ-5 по ставкам.</p>
+{% endfor %}
+{% endblock %}
