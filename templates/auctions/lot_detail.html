@@ -1,3 +1,4 @@
+<!-- templates/auction/lot_detail.html -->
 {% extends 'base.html' %}
 
 {% block content %}
@@ -23,18 +24,30 @@
         </div>
     </div>
     <div class="col-md-6">
+        {% if not lot.is_auction_ended %}
         <p>Время до окончания: {{ lot.auction_end|timeuntil }}</p>
+        {% endif %}
+        <p>Автор: {{ lot.created_by.username }}</p>
         <p>Начальная цена: {{ lot.initial_price }}</p>
         <p>Текущая ставка: {{ lot.current_price|default:"Нет ставок" }}</p>
-        {% if lot.bids.exists %}
-        <p>Последний участник: {{ lot.bids.first.user.username }}</p>
+        {% if recent_bidders %}
+        <p>Последние участники:</p>
+        <ul>
+            {% for bid in recent_bidders %}
+            <li>{{ bid.user.username }} (ставка: {{ bid.amount }})</li>
+            {% endfor %}
+        </ul>
         {% endif %}
         {% if user.is_authenticated and not lot.is_auction_ended %}
+        {% if is_author %}
+        <p>Вы не можете делать ставки на свой лот.</p>
+        {% else %}
         <form method="post">
             {% csrf_token %}
             {{ bid_form }}
             <button type="submit" name="bid" class="btn btn-success">Сделать ставку</button>
         </form>
+        {% endif %}
         {% elif lot.is_auction_ended %}
         <p>Аукцион завершен.</p>
         {% else %}
@@ -47,12 +60,14 @@
 <p>{{ lot.description }}</p>
 
 <h2>Комментарии</h2>
-{% if user.is_authenticated %}
+{% if user.is_authenticated and not lot.is_auction_ended %}
 <form method="post">
     {% csrf_token %}
     {{ comment_form }}
     <button type="submit" name="comment" class="btn btn-primary">Добавить комментарий</button>
 </form>
+{% elif lot.is_auction_ended %}
+<p>Комментарии нельзя оставлять после завершения аукциона.</p>
 {% else %}
 <p><a href="{% url 'login' %}">Авторизуйтесь</a>, чтобы оставить комментарий.</p>
 {% endif %}

@@ -1,22 +1,16 @@
+<!-- templates/auction/profile.html -->
+
 {% extends 'base.html' %}
 
 {% block content %}
 <h1>Профиль: {{ user.username }}</h1>
 <p>Email: {{ user.email }}</p>
-<p>О себе: {{ user.bio|default:"Не указано" }}</p>
-
-<h2>Редактировать профиль</h2>
-<form method="post" action="{% url 'profile' %}">
-    {% csrf_token %}
-    <textarea name="bio" rows="5" class="form-control">{{ user.bio|default:"" }}</textarea>
-    <button type="submit" name="update_bio" class="btn btn-primary mt-2">Сохранить</button>
-</form>
 
 <h2>Сменить пароль</h2>
 <p><a href="{% url 'password_change' %}" class="btn btn-secondary">Сменить пароль</a></p>
 
 <h2>Мои действия</h2>
 <p><a href="{% url 'participation_history' %}" class="btn btn-info">История участия</a></p>
-<p><a href="{% url 'win_history' %}" class="btn btn-info">Выигранные и топ-5 лоты</a></p>
+<p><a href="{% url 'win_history' %}" class="btn btn-info">Выигранные и топ-3 лоты</a></p>
 <p><a href="{% url 'user_lots' %}" class="btn btn-info">Мои лоты</a></p>
 {% endblock %}

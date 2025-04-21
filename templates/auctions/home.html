@@ -1,3 +1,4 @@
+<!-- templates/auction/home.html -->
 {% extends 'base.html' %}
 
 {% block content %}
@@ -13,8 +14,14 @@
             {% endif %}
             <div class="card-body">
                 <h5 class="card-title">{{ lot.title }}</h5>
+                {% if not lot.is_auction_ended %}
+                <p>Время до окончания: {{ lot.auction_end|timeuntil }}</p>
+                {% endif %}
                 <p>Начальная цена: {{ lot.initial_price }}</p>
                 <p>Текущая цена: {{ lot.current_price|default:"Нет ставок" }}</p>
+                <p>Статус: {% if not lot.is_auction_ended %}Активен{% else %}Завершен{% endif %}</p>
+                <p>Последняя ставка: {{ lot.bids.first.user.username|default:"Нет участников" }}</p>
+
                 <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
             </div>
         </div>
@@ -34,8 +41,12 @@
             {% endif %}
             <div class="card-body">
                 <h5 class="card-title">{{ lot.title }}</h5>
+                {% if not lot.is_auction_ended %}
+                <p>Время до окончания: {{ lot.auction_end|timeuntil }}</p>
+                {% endif %}
                 <p>Начальная цена: {{ lot.initial_price }}</p>
                 <p>Текущая цена: {{ lot.current_price|default:"Нет ставок" }}</p>
+                <p>Статус: {% if not lot.is_auction_ended %}Активен{% else %}Завершен{% endif %}</p>
                 <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
             </div>
         </div>

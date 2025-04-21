@@ -1,3 +1,5 @@
+<!-- templates/auction/user_lot.html -->
+
 {% extends 'base.html' %}
 
 {% block content %}
@@ -22,10 +24,10 @@
     <div class="card-body">
         <h5>{{ lot.title }}</h5>
         <p>Финальная цена: {{ lot.current_price|default:"Нет ставок" }}</p>
-        <h6>Последние 5 участников:</h6>
+        <h6>Последние 3 участника:</h6>
         <ul>
             {% for bid in recent_bidders.lot.pk %}
-            <li>{{ bid.user.email }} - {{ bid.amount }}</li>
+            <li>{{ bid.user.username }} - {{ bid.amount }}</li>
             {% empty %}
             <li>Ставок не было</li>
             {% endfor %}
