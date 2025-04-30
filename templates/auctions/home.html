@@ -1,11 +1,12 @@
-<!-- templates/auction/home.html -->
-{% extends 'base.html' %}
+<!-- templates/auctions/home.html -->
 
+{% extends 'base.html' %}
+{% block page_id %}home{% endblock %}
 {% block content %}
 <h1>Аукционы</h1>
 
 <h2>Последние лоты</h2>
-<div class="row">
+<div class="row" id="latest-lots">
     {% for lot in latest_lots %}
     <div class="col-md-4">
         <div class="card">
@@ -21,7 +22,6 @@
                 <p>Текущая цена: {{ lot.current_price|default:"Нет ставок" }}</p>
                 <p>Статус: {% if not lot.is_auction_ended %}Активен{% else %}Завершен{% endif %}</p>
                 <p>Последняя ставка: {{ lot.bids.first.user.username|default:"Нет участников" }}</p>
-
                 <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
             </div>
         </div>
@@ -32,7 +32,7 @@
 </div>
 
 <h2>Другие лоты</h2>
-<div class="row">
+<div class="row" id="other-lots">
     {% for lot in other_lots %}
     <div class="col-md-4">
         <div class="card">

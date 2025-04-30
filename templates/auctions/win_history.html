@@ -1,33 +1,37 @@
-<!-- templates/auction/win_history.html -->
+<!-- templates/auctions/win_history.html -->
 
 {% extends 'base.html' %}
-
+{% block page_id %}win_history{% endblock %}
 {% block content %}
 <h1>Выигранные и топ-3 лоты</h1>
 
 <h2>Выигранные лоты</h2>
-{% for lot in won_lots %}
-<div class="card">
-    <div class="card-body">
-        <h5>{{ lot.title }}</h5>
-        <p>Финальная цена: {{ lot.current_price }}</p>
-        <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
+<div id="won-lots">
+    {% for lot in won_lots %}
+    <div class="card">
+        <div class="card-body">
+            <h5>{{ lot.title }}</h5>
+            <p>Финальная цена: {{ lot.current_price|default:"Нет ставок" }}</p>
+            <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
+        </div>
     </div>
+    {% empty %}
+    <p>Вы не выиграли лоты.</p>
+    {% endfor %}
 </div>
-{% empty %}
-<p>Вы не выиграли лоты.</p>
-{% endfor %}
 
 <h2>Лоты, где вы были в топ-3</h2>
-{% for lot in top_three_lots %}
-<div class="card">
-    <div class="card-body">
-        <h5>{{ lot.title }}</h5>
-        <p>Финальная цена: {{ lot.current_price|default:"Нет ставок" }}</p>
-        <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
+<div id="top-three-lots">
+    {% for lot in top_three_lots %}
+    <div class="card">
+        <div class="card-body">
+            <h5>{{ lot.title }}</h5>
+            <p>Финальная цена: {{ lot.current_price|default:"Нет ставок" }}</p>
+            <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
+        </div>
     </div>
+    {% empty %}
+    <p>Вы не входили в топ-3 по ставкам.</p>
+    {% endfor %}
 </div>
-{% empty %}
-<p>Вы не входили в топ-3 по ставкам.</p>
-{% endfor %}
 {% endblock %}

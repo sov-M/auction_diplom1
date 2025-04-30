@@ -1,3 +1,5 @@
+#auctions/views.py
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -8,13 +10,42 @@ from django.utils import timezone
 from django.contrib import messages
 from django.db.models import Q, Max
 from datetime import timedelta
-
+from django.http import JsonResponse
+import json
 
 class HomeView(View):
     def get(self, request):
         all_lots = Lot.objects.all().order_by('-created_at')
-        latest_lots = all_lots[:7]
-        other_lots = all_lots[7:]
+        latest_lots = all_lots[:3]
+        other_lots = all_lots[3:]
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({
+                'latest_lots': [
+                    {
+                        'id': lot.id,
+                        'title': lot.title,
+                        'main_image': lot.main_image.url if lot.main_image else None,
+                        'initial_price': float(lot.initial_price),
+                        'current_price': float(lot.current_price) if lot.current_price else None,
+                        'is_auction_ended': lot.is_auction_ended(),
+                        'time_until': lot.auction_end.isoformat() if not lot.is_auction_ended() else '',  # Передаем ISO-строку
+                        'last_bidder': lot.bids.first().user.username if lot.bids.exists() else None
+                    } for lot in latest_lots
+                ],
+                'other_lots': [
+                    {
+                        'id': lot.id,
+                        'title': lot.title,
+                        'main_image': lot.main_image.url if lot.main_image else None,
+                        'initial_price': float(lot.initial_price),
+                        'current_price': float(lot.current_price) if lot.current_price else None,
+                        'is_auction_ended': lot.is_auction_ended(),
+                        'time_until': lot.auction_end.isoformat() if not lot.is_auction_ended() else ''  # Передаем ISO-строку
+                    } for lot in other_lots
+                ]
+            })
+
         return render(request, 'auctions/home.html', {
             'latest_lots': latest_lots,
             'other_lots': other_lots,
@@ -22,12 +53,32 @@ class HomeView(View):
 
 class LotDetailView(View):
     def get(self, request, pk):
-        lot = get_object_or_404(Lot.objects.prefetch_related('bids__user'), pk=pk)
+        lot = get_object_or_404(Lot.objects.prefetch_related('bids__user', 'comments__user'), pk=pk)
         is_author = request.user.is_authenticated and lot.created_by == request.user
         bid_form = BidForm(lot=lot) if request.user.is_authenticated and not is_author else None
         comment_form = CommentForm() if request.user.is_authenticated else None
-        # Получаем уникальных участников с их максимальными ставками
-        unique_bidders = lot.bids.values('user__username').annotate(max_amount=Max('amount')).order_by('-max_amount')
+        unique_bidders = lot.bids.values('user__username').annotate(max_amount=Max('amount')).order_by('-max_amount')[:3]  # Ограничиваем тремя
+        
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            bidders = [
+                {'username': bidder['user__username'], 'amount': float(bidder['max_amount'])}
+                for bidder in unique_bidders
+            ]
+            comments = [
+                {
+                    'content': comment.content,
+                    'username': comment.user.username,
+                    'created_at': comment.created_at.isoformat()
+                }
+                for comment in lot.comments.all()
+            ]
+            return JsonResponse({
+                'bidders': bidders,
+                'comments': comments,
+                'current_price': float(lot.current_price) if lot.current_price else None,
+                'is_auction_ended': lot.is_auction_ended(),
+            })
+
         return render(request, 'auctions/lot_detail.html', {
             'lot': lot,
             'bid_form': bid_form,
@@ -37,7 +88,7 @@ class LotDetailView(View):
         })
 
     def post(self, request, pk):
-        lot = get_object_or_404(Lot.objects.prefetch_related('bids__user'), pk=pk)
+        lot = get_object_or_404(Lot.objects.prefetch_related('bids__user', 'comments__user'), pk=pk)
         is_author = request.user.is_authenticated and lot.created_by == request.user
         if not request.user.is_authenticated:
             messages.error(request, "Авторизуйтесь, чтобы сделать ставку или оставить комментарий.")
@@ -53,7 +104,6 @@ class LotDetailView(View):
                 if lot.is_auction_ended():
                     messages.error(request, "Аукцион завершен.")
                     return redirect('lot_detail', pk=lot.pk)
-                # Проверка, может ли пользователь сделать новую ставку
                 last_bid = lot.bids.first()
                 if last_bid and last_bid.user == request.user:
                     messages.error(request, "Вы не можете сделать новую ставку, пока другой пользователь не перебьёт вашу.")
@@ -70,8 +120,6 @@ class LotDetailView(View):
             if lot.is_auction_ended():
                 messages.error(request, "Комментарии нельзя оставлять после завершения аукциона.")
                 return redirect('lot_detail', pk=lot.pk)
-            
-            # Проверка времени последнего комментария
             if request.user.is_authenticated:
                 last_comment = Comment.objects.filter(
                     user=request.user,
@@ -90,8 +138,7 @@ class LotDetailView(View):
                 messages.success(request, "Комментарий добавлен.")
                 return redirect('lot_detail', pk=lot.pk)
 
-        # Получаем уникальных участников с их максимальными ставками для отображения после POST
-        unique_bidders = lot.bids.values('user__username').annotate(max_amount=Max('amount')).order_by('-max_amount')
+        unique_bidders = lot.bids.values('user__username').annotate(max_amount=Max('amount')).order_by('-max_amount')[:4]  # Ограничиваем тремя
         return render(request, 'auctions/lot_detail.html', {
             'lot': lot,
             'bid_form': BidForm(lot=lot) if not is_author else None,
@@ -134,6 +181,25 @@ class ParticipationHistoryView(LoginRequiredMixin, View):
         user = request.user
         participated_lots = Lot.objects.filter(bids__user=user).distinct()
         active_lots = participated_lots.filter(auction_end__gt=timezone.now())
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({
+                'active_lots': [
+                    {
+                        'id': lot.id,
+                        'title': lot.title,
+                        'current_price': float(lot.current_price) if lot.current_price else None,
+                    } for lot in active_lots
+                ],
+                'participated_lots': [
+                    {
+                        'id': lot.id,
+                        'title': lot.title,
+                        'is_active': lot.is_active,
+                    } for lot in participated_lots
+                ]
+            })
+
         return render(request, 'auctions/participation_history.html', {
             'active_lots': active_lots,
             'participated_lots': participated_lots,
@@ -148,6 +214,25 @@ class WinHistoryView(LoginRequiredMixin, View):
             current_price__in=Lot.objects.filter(bids__user=user).values('bids__amount')
         ).distinct()
         top_three_lots = Lot.objects.filter(bids__user=user).filter(bids__in=Bid.objects.order_by('-amount')[:3]).distinct()
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({
+                'won_lots': [
+                    {
+                        'id': lot.id,
+                        'title': lot.title,
+                        'current_price': float(lot.current_price) if lot.current_price else None,
+                    } for lot in won_lots
+                ],
+                'top_three_lots': [
+                    {
+                        'id': lot.id,
+                        'title': lot.title,
+                        'current_price': float(lot.current_price) if lot.current_price else None,
+                    } for lot in top_three_lots
+                ]
+            })
+
         return render(request, 'auctions/win_history.html', {
             'won_lots': won_lots,
             'top_three_lots': top_three_lots,
@@ -160,14 +245,37 @@ class UserLotsView(LoginRequiredMixin, View):
         finished_lots = Lot.objects.filter(created_by=user, auction_end__lte=timezone.now())
         recent_bidders = {}
         for lot in finished_lots:
-            # Получаем уникальных пользователей
             bids = lot.bids.values('user_id').distinct()[:3]
             user_ids = [bid['user_id'] for bid in bids]
-            # Получаем последнюю ставку для каждого пользователя
             recent_bidders[lot.pk] = Bid.objects.filter(
                 lot=lot,
                 user_id__in=user_ids
             ).order_by('user_id', '-created_at').distinct('user_id')
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({
+                'active_lots': [
+                    {
+                        'id': lot.id,
+                        'title': lot.title,
+                        'current_price': float(lot.current_price) if lot.current_price else None,
+                    } for lot in active_lots
+                ],
+                'finished_lots': [
+                    {
+                        'id': lot.id,
+                        'title': lot.title,
+                        'current_price': float(lot.current_price) if lot.current_price else None,
+                        'recent_bidders': [
+                            {
+                                'username': bid.user.username,
+                                'amount': float(bid.amount)
+                            } for bid in recent_bidders.get(lot.pk, [])
+                        ]
+                    } for lot in finished_lots
+                ]
+            })
+
         return render(request, 'auctions/user_lots.html', {
             'active_lots': active_lots,
             'finished_lots': finished_lots,

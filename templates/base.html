@@ -1,3 +1,4 @@
+<!-- templates/base.html -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -8,7 +9,7 @@
     <title>Аукционы</title>
 </head>
 
-<body class="container">
+<body class="container" data-page="{% block page_id %}{% endblock %}">
     <ul class="list-group">
         <li class="list-group-item">
             {% if user.is_authenticated %}
@@ -41,6 +42,275 @@
 
     {% block content %}
     {% endblock %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const pageId = document.body.dataset.page;
+            const updateInterval = 5000;
+            let lastData = null;
+
+            // Функция для форматирования времени до окончания в минутах/часах
+            function formatTimeUntil(endTime) {
+                if (!endTime) return '';
+                const now = new Date();
+                const end = new Date(endTime);
+                const delta = (end - now) / 1000; // Разница в секундах
+                if (delta <= 0) return '';
+                const hours = Math.floor(delta / 3600);
+                const minutes = Math.floor((delta % 3600) / 60);
+                if (hours >= 1) return `${hours} ч`;
+                return `${minutes} мин`;
+            }
+
+            function updatePageData() {
+                fetch(window.location.href, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (JSON.stringify(data) === JSON.stringify(lastData)) return;
+                        lastData = data;
+
+                        if (pageId === 'lot_detail') {
+                            const currentPriceEl = document.getElementById('current-price');
+                            if (currentPriceEl) {
+                                currentPriceEl.textContent = data.current_price ? data.current_price : 'Нет ставок';
+                            }
+
+                            const biddersListEl = document.getElementById('bidders-list');
+                            if (biddersListEl) {
+                                biddersListEl.innerHTML = '';
+                                if (data.bidders.length > 0) {
+                                    let html = '<p>Все участники:</p><ul class="list-group">';
+                                    data.bidders.forEach(bidder => {
+                                        const isCurrent = data.current_price && bidder.amount === data.current_price;
+                                        html += `<li class="list-group-item ${isCurrent ? 'list-group-item-success' : ''}">${bidder.username} (ставка: ${bidder.amount})</li>`;
+                                    });
+                                    html += '</ul>';
+                                    biddersListEl.innerHTML = html;
+                                } else {
+                                    biddersListEl.innerHTML = '<p>Ставок пока нет.</p>';
+                                }
+                            }
+
+                            const commentsListEl = document.getElementById('comments-list');
+                            if (commentsListEl) {
+                                commentsListEl.innerHTML = '';
+                                if (data.comments.length > 0) {
+                                    data.comments.forEach(comment => {
+                                        const date = new Date(comment.created_at).toLocaleString();
+                                        commentsListEl.innerHTML += `
+                                        <div class="card mt-2">
+                                            <div class="card-body">
+                                                <p>${comment.content}</p>
+                                                <p>Автор: ${comment.username} | ${date}</p>
+                                            </div>
+                                        </div>
+                                    `;
+                                    });
+                                } else {
+                                    commentsListEl.innerHTML = '<p>Комментариев пока нет.</p>';
+                                }
+                            }
+
+                            if (data.is_auction_ended) {
+                                document.getElementById('bid-form')?.remove();
+                                document.getElementById('comment-form')?.remove();
+                                if (!document.getElementById('auction-ended-message')) {
+                                    const message = document.createElement('p');
+                                    message.id = 'auction-ended-message';
+                                    message.textContent = 'Аукцион завершен.';
+                                    document.querySelector('.col-md-6')?.appendChild(message);
+                                }
+                            }
+                        } else if (pageId === 'home') {
+                            const latestLotsEl = document.getElementById('latest-lots');
+                            const otherLotsEl = document.getElementById('other-lots');
+                            if (latestLotsEl) {
+                                latestLotsEl.innerHTML = '';
+                                if (data.latest_lots.length > 0) {
+                                    data.latest_lots.forEach(lot => {
+                                        latestLotsEl.innerHTML += `
+                                        <div class="col-md-4">
+                                            <div class="card">
+                                                ${lot.main_image ? `<img src="${lot.main_image}" class="card-img-top" alt="${lot.title}">` : ''}
+                                                <div class="card-body">
+                                                    <h5 class="card-title">${lot.title}</h5>
+                                                    ${lot.is_auction_ended ? '' : `<p>Время до окончания: ${formatTimeUntil(lot.time_until)}</p>`}
+                                                    <p>Начальная цена: ${lot.initial_price}</p>
+                                                    <p>Текущая цена: ${lot.current_price || 'Нет ставок'}</p>
+                                                    <p>Статус: ${lot.is_auction_ended ? 'Завершен' : 'Активен'}</p>
+                                                    <p>Последняя ставка: ${lot.last_bidder || 'Нет участников'}</p>
+                                                    <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                    });
+                                } else {
+                                    latestLotsEl.innerHTML = '<p>Нет активных лотов.</p>';
+                                }
+                            }
+                            if (otherLotsEl) {
+                                otherLotsEl.innerHTML = '';
+                                if (data.other_lots.length > 0) {
+                                    data.other_lots.forEach(lot => {
+                                        otherLotsEl.innerHTML += `
+                                        <div class="col-md-4">
+                                            <div class="card">
+                                                ${lot.main_image ? `<img src="${lot.main_image}" class="card-img-top" alt="${lot.title}">` : ''}
+                                                <div class="card-body">
+                                                    <h5 class="card-title">${lot.title}</h5>
+                                                    ${lot.is_auction_ended ? '' : `<p>Время до окончания: ${formatTimeUntil(lot.time_until)}</p>`}
+                                                    <p>Начальная цена: ${lot.initial_price}</p>
+                                                    <p>Текущая цена: ${lot.current_price || 'Нет ставок'}</p>
+                                                    <p>Статус: ${lot.is_auction_ended ? 'Завершен' : 'Активен'}</p>
+                                                    <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                    });
+                                } else {
+                                    otherLotsEl.innerHTML = '<p>Нет других лотов.</p>';
+                                }
+                            }
+                        } else if (pageId === 'user_lots') {
+                            const activeLotsEl = document.getElementById('active-lots');
+                            const finishedLotsEl = document.getElementById('finished-lots');
+                            if (activeLotsEl) {
+                                activeLotsEl.innerHTML = '';
+                                if (data.active_lots.length > 0) {
+                                    data.active_lots.forEach(lot => {
+                                        activeLotsEl.innerHTML += `
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5>${lot.title}</h5>
+                                                <p>Текущая цена: ${lot.current_price || 'Нет ставок'}</p>
+                                                <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
+                                            </div>
+                                        </div>
+                                    `;
+                                    });
+                                } else {
+                                    activeLotsEl.innerHTML = '<p>Нет активных лотов.</p>';
+                                }
+                            }
+                            if (finishedLotsEl) {
+                                finishedLotsEl.innerHTML = '';
+                                if (data.finished_lots.length > 0) {
+                                    data.finished_lots.forEach(lot => {
+                                        let biddersHtml = '<ul>';
+                                        lot.recent_bidders.forEach(bidder => {
+                                            biddersHtml += `<li>${bidder.username} - ${bidder.amount}</li>`;
+                                        });
+                                        biddersHtml += lot.recent_bidders.length ? '</ul>' : '<li>Ставок не было</li></ul>';
+                                        finishedLotsEl.innerHTML += `
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5>${lot.title}</h5>
+                                                <p>Финальная цена: ${lot.current_price || 'Нет ставок'}</p>
+                                                <h6>Последние 3 участника:</h6>
+                                                ${biddersHtml}
+                                                <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
+                                            </div>
+                                        </div>
+                                    `;
+                                    });
+                                } else {
+                                    finishedLotsEl.innerHTML = '<p>Нет завершенных лотов.</p>';
+                                }
+                            }
+                        } else if (pageId === 'participation_history') {
+                            const activeLotsEl = document.getElementById('active-lots');
+                            const participatedLotsEl = document.getElementById('participated-lots');
+                            if (activeLotsEl) {
+                                activeLotsEl.innerHTML = '';
+                                if (data.active_lots.length > 0) {
+                                    data.active_lots.forEach(lot => {
+                                        activeLotsEl.innerHTML += `
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5>${lot.title}</h5>
+                                                <p>Текущая цена: ${lot.current_price || 'Нет ставок'}</p>
+                                                <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
+                                            </div>
+                                        </div>
+                                    `;
+                                    });
+                                } else {
+                                    activeLotsEl.innerHTML = '<p>Нет активных аукционов.</p>';
+                                }
+                            }
+                            if (participatedLotsEl) {
+                                participatedLotsEl.innerHTML = '';
+                                if (data.participated_lots.length > 0) {
+                                    data.participated_lots.forEach(lot => {
+                                        participatedLotsEl.innerHTML += `
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5>${lot.title}</h5>
+                                                <p>Статус: ${lot.is_active ? 'Активен' : 'Завершен'}</p>
+                                                <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
+                                            </div>
+                                        </div>
+                                    `;
+                                    });
+                                } else {
+                                    participatedLotsEl.innerHTML = '<p>Вы не участвовали в аукционах.</p>';
+                                }
+                            }
+                        } else if (pageId === 'win_history') {
+                            const wonLotsEl = document.getElementById('won-lots');
+                            const topThreeLotsEl = document.getElementById('top-three-lots');
+                            if (wonLotsEl) {
+                                wonLotsEl.innerHTML = '';
+                                if (data.won_lots.length > 0) {
+                                    data.won_lots.forEach(lot => {
+                                        wonLotsEl.innerHTML += `
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5>${lot.title}</h5>
+                                                <p>Финальная цена: ${lot.current_price || 'Нет ставок'}</p>
+                                                <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
+                                            </div>
+                                        </div>
+                                    `;
+                                    });
+                                } else {
+                                    wonLotsEl.innerHTML = '<p>Вы не выиграли лоты.</p>';
+                                }
+                            }
+                            if (topThreeLotsEl) {
+                                topThreeLotsEl.innerHTML = '';
+                                if (data.top_three_lots.length > 0) {
+                                    data.top_three_lots.forEach(lot => {
+                                        topThreeLotsEl.innerHTML += `
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5>${lot.title}</h5>
+                                                <p>Финальная цена: ${lot.current_price || 'Нет ставок'}</p>
+                                                <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
+                                            </div>
+                                        </div>
+                                    `;
+                                    });
+                                } else {
+                                    topThreeLotsEl.innerHTML = '<p>Вы не входили в топ-3 по ставкам.</p>';
+                                }
+                            }
+                        }
+                    })
+                    .catch(error => console.error('Error updating page data:', error));
+            }
+
+            if (pageId) {
+                setInterval(updatePageData, updateInterval);
+                updatePageData();
+            }
+        });
+    </script>
 </body>
 
 </html>
