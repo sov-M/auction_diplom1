@@ -30,13 +30,15 @@
         <p>Автор: {{ lot.created_by.username }}</p>
         <p>Начальная цена: {{ lot.initial_price }}</p>
         <p>Текущая ставка: {{ lot.current_price|default:"Нет ставок" }}</p>
-        {% if recent_bidders %}
-        <p>Последние участники:</p>
-        <ul>
-            {% for bid in recent_bidders %}
-            <li>{{ bid.user.username }} (ставка: {{ bid.amount }})</li>
+        {% if unique_bidders %}
+        <p>Все участники:</p>
+        <ul class="list-group">
+            {% for bidder in unique_bidders %}
+            <li class="list-group-item">{{ bidder.user__username }} (ставка: {{ bidder.max_amount }})</li>
             {% endfor %}
         </ul>
+        {% else %}
+        <p>Ставок пока нет.</p>
         {% endif %}
         {% if user.is_authenticated and not lot.is_auction_ended %}
         {% if is_author %}

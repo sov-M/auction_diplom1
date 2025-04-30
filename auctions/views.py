@@ -1,5 +1,3 @@
-#auctions/views.py
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -8,7 +6,7 @@ from .models import Lot, Bid, Comment
 from .forms import LotForm, BidForm, CommentForm
 from django.utils import timezone
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Q, Max
 from datetime import timedelta
 
 
@@ -28,21 +26,14 @@ class LotDetailView(View):
         is_author = request.user.is_authenticated and lot.created_by == request.user
         bid_form = BidForm(lot=lot) if request.user.is_authenticated and not is_author else None
         comment_form = CommentForm() if request.user.is_authenticated else None
-        # Получаем последние 3 уникальных участника
-        # Сначала выбираем уникальных пользователей, затем их максимальные ставки
-        bids = lot.bids.values('user_id').distinct()[:3]  # Получаем ID уникальных пользователей
-        user_ids = [bid['user_id'] for bid in bids]
-        # Получаем максимальную ставку для каждого пользователя
-        recent_bidders = Bid.objects.filter(
-            lot=lot,
-            user_id__in=user_ids
-        ).order_by('user_id', '-amount').distinct('user_id')
+        # Получаем уникальных участников с их максимальными ставками
+        unique_bidders = lot.bids.values('user__username').annotate(max_amount=Max('amount')).order_by('-max_amount')
         return render(request, 'auctions/lot_detail.html', {
             'lot': lot,
             'bid_form': bid_form,
             'comment_form': comment_form,
             'is_author': is_author,
-            'recent_bidders': recent_bidders,
+            'unique_bidders': unique_bidders,
         })
 
     def post(self, request, pk):
@@ -99,19 +90,14 @@ class LotDetailView(View):
                 messages.success(request, "Комментарий добавлен.")
                 return redirect('lot_detail', pk=lot.pk)
 
-        # Получаем последние 3 уникальных участника для отображения после POST-запроса
-        bids = lot.bids.values('user_id').distinct()[:3]
-        user_ids = [bid['user_id'] for bid in bids]
-        recent_bidders = Bid.objects.filter(
-            lot=lot,
-            user_id__in=user_ids
-        ).order_by('user_id', '-amount').distinct('user_id')
+        # Получаем уникальных участников с их максимальными ставками для отображения после POST
+        unique_bidders = lot.bids.values('user__username').annotate(max_amount=Max('amount')).order_by('-max_amount')
         return render(request, 'auctions/lot_detail.html', {
             'lot': lot,
             'bid_form': BidForm(lot=lot) if not is_author else None,
             'comment_form': CommentForm(),
             'is_author': is_author,
-            'recent_bidders': recent_bidders,
+            'unique_bidders': unique_bidders,
         })
 
 class CreateLotView(LoginRequiredMixin, View):
@@ -129,7 +115,6 @@ class CreateLotView(LoginRequiredMixin, View):
             return redirect('home')
         return render(request, 'auctions/create_lot.html', {'form': form})
 
-
 class ProfileView(LoginRequiredMixin, View):
     def get(self, request):
         user = request.user
@@ -144,7 +129,6 @@ class ProfileView(LoginRequiredMixin, View):
             messages.success(request, "Профиль обновлен.")
         return redirect('profile')
 
-
 class ParticipationHistoryView(LoginRequiredMixin, View):
     def get(self, request):
         user = request.user
@@ -154,7 +138,6 @@ class ParticipationHistoryView(LoginRequiredMixin, View):
             'active_lots': active_lots,
             'participated_lots': participated_lots,
         })
-
 
 class WinHistoryView(LoginRequiredMixin, View):
     def get(self, request):
