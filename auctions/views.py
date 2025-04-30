@@ -15,9 +15,11 @@ import json
 
 class HomeView(View):
     def get(self, request):
-        all_lots = Lot.objects.all().order_by('-created_at')
-        latest_lots = all_lots[:3]
-        other_lots = all_lots[3:]
+        # Получаем только активные лоты (где is_active=True)
+        active_lots = Lot.objects.filter(is_active=True).order_by('-created_at')
+        # Разделяем на последние 3 и остальные
+        latest_lots = active_lots[:3]
+        other_lots = active_lots[3:]
 
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({
@@ -29,7 +31,7 @@ class HomeView(View):
                         'initial_price': float(lot.initial_price),
                         'current_price': float(lot.current_price) if lot.current_price else None,
                         'is_auction_ended': lot.is_auction_ended(),
-                        'time_until': lot.auction_end.isoformat() if not lot.is_auction_ended() else '',  # Передаем ISO-строку
+                        'time_until': lot.auction_end.isoformat() if not lot.is_auction_ended() else '',
                         'last_bidder': lot.bids.first().user.username if lot.bids.exists() else None
                     } for lot in latest_lots
                 ],
@@ -41,7 +43,7 @@ class HomeView(View):
                         'initial_price': float(lot.initial_price),
                         'current_price': float(lot.current_price) if lot.current_price else None,
                         'is_auction_ended': lot.is_auction_ended(),
-                        'time_until': lot.auction_end.isoformat() if not lot.is_auction_ended() else ''  # Передаем ISO-строку
+                        'time_until': lot.auction_end.isoformat() if not lot.is_auction_ended() else ''
                     } for lot in other_lots
                 ]
             })
@@ -50,7 +52,8 @@ class HomeView(View):
             'latest_lots': latest_lots,
             'other_lots': other_lots,
         })
-
+        
+        
 class LotDetailView(View):
     def get(self, request, pk):
         lot = get_object_or_404(Lot.objects.prefetch_related('bids__user', 'comments__user'), pk=pk)
