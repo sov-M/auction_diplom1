@@ -47,7 +47,6 @@
     {% block content %}
     {% endblock %}
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const pageId = document.body.dataset.page;
@@ -105,13 +104,13 @@
                                     data.comments.forEach(comment => {
                                         const date = new Date(comment.created_at).toLocaleString();
                                         commentsListEl.innerHTML += `
-                                        <div class="card mt-2">
-                                            <div class="card-body">
-                                                <p>${comment.content}</p>
-                                                <p>Автор: ${comment.username} | ${date}</p>
-                                            </div>
+                                    <div class="card mt-2">
+                                        <div class="card-body">
+                                            <p>${comment.content}</p>
+                                            <p>Автор: ${comment.username} | ${date}</p>
                                         </div>
-                                    `;
+                                    </div>
+                                `;
                                     });
                                 } else {
                                     commentsListEl.innerHTML = '<p>Комментариев пока нет.</p>';
@@ -136,21 +135,21 @@
                                 if (data.latest_lots.length > 0) {
                                     data.latest_lots.forEach(lot => {
                                         latestLotsEl.innerHTML += `
-                                        <div class="col-md-4">
-                                            <div class="card">
-                                                ${lot.main_image ? `<img src="${lot.main_image}" class="card-img-top" alt="${lot.title}">` : ''}
-                                                <div class="card-body">
-                                                    <h5 class="card-title">${lot.title}</h5>
-                                                    ${lot.is_auction_ended ? '' : `<p>Время до окончания: ${formatTimeUntil(lot.time_until)}</p>`}
-                                                    <p>Начальная цена: ${lot.initial_price}</p>
-                                                    <p>Текущая цена: ${lot.current_price || 'Нет ставок'}</p>
-                                                    <p>Статус: ${lot.is_auction_ended ? 'Завершен' : 'Активен'}</p>
-                                                    <p>Последняя ставка: ${lot.last_bidder || 'Нет участников'}</p>
-                                                    <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
-                                                </div>
+                                    <div class="col-md-4">
+                                        <div class="card">
+                                            ${lot.main_image ? `<img src="${lot.main_image}" class="card-img-top" alt="${lot.title}">` : ''}
+                                            <div class="card-body">
+                                                <h5 class="card-title">${lot.title}</h5>
+                                                ${lot.is_auction_ended ? '' : `<p>Время до окончания: ${formatTimeUntil(lot.time_until)}</p>`}
+                                                <p>Начальная цена: ${lot.initial_price}</p>
+                                                <p>Текущая цена: ${lot.current_price || 'Нет ставок'}</p>
+                                                <p>Статус: ${lot.is_auction_ended ? 'Завершен' : 'Активен'}</p>
+                                                <p>Последняя ставка: ${lot.last_bidder || 'Нет участников'}</p>
+                                                <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
                                             </div>
                                         </div>
-                                    `;
+                                    </div>
+                                `;
                                     });
                                 } else {
                                     latestLotsEl.innerHTML = '<p>Нет активных лотов.</p>';
@@ -160,21 +159,21 @@
                                 otherLotsEl.innerHTML = '';
                                 if (data.other_lots.length > 0) {
                                     data.other_lots.forEach(lot => {
-                                        otherLotsEl.innerHTML += `
-                                        <div class="col-md-4">
-                                            <div class="card">
-                                                ${lot.main_image ? `<img src="${lot.main_image}" class="card-img-top" alt="${lot.title}">` : ''}
-                                                <div class="card-body">
-                                                    <h5 class="card-title">${lot.title}</h5>
-                                                    ${lot.is_auction_ended ? '' : `<p>Время до окончания: ${formatTimeUntil(lot.time_until)}</p>`}
-                                                    <p>Начальная цена: ${lot.initial_price}</p>
-                                                    <p>Текущая цена: ${lot.current_price || 'Нет ставок'}</p>
-                                                    <p>Статус: ${lot.is_auction_ended ? 'Завершен' : 'Активен'}</p>
-                                                    <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
-                                                </div>
+                                        latestLotsEl.innerHTML += `
+                                    <div class="col-md-4">
+                                        <div class="card">
+                                            ${lot.main_image ? `<img src="${lot.main_image}" class="card-img-top" alt="${lot.title}">` : ''}
+                                            <div class="card-body">
+                                                <h5 class="card-title">${lot.title}</h5>
+                                                ${lot.is_auction_ended ? '' : `<p>Время до окончания: ${formatTimeUntil(lot.time_until)}</p>`}
+                                                <p>Начальная цена: ${lot.initial_price}</p>
+                                                <p>Текущая цена: ${lot.current_price || 'Нет ставок'}</p>
+                                                <p>Статус: ${lot.is_auction_ended ? 'Завершен' : 'Активен'}</p>
+                                                <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
                                             </div>
                                         </div>
-                                    `;
+                                    </div>
+                                `;
                                     });
                                 } else {
                                     otherLotsEl.innerHTML = '<p>Нет других лотов.</p>';
@@ -188,14 +187,14 @@
                                 if (data.active_lots.length > 0) {
                                     data.active_lots.forEach(lot => {
                                         activeLotsEl.innerHTML += `
-                                        <div class="card">
-                                            <div class="card-body">
-                                                <h5>${lot.title}</h5>
-                                                <p>Текущая цена: ${lot.current_price || 'Нет ставок'}</p>
-                                                <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
-                                            </div>
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5>${lot.title}</h5>
+                                            <p>Текущая цена: ${lot.current_price || 'Нет ставок'}</p>
+                                            <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
                                         </div>
-                                    `;
+                                    </div>
+                                `;
                                     });
                                 } else {
                                     activeLotsEl.innerHTML = '<p>Нет активных лотов.</p>';
@@ -206,21 +205,21 @@
                                 if (data.finished_lots.length > 0) {
                                     data.finished_lots.forEach(lot => {
                                         let biddersHtml = '<ul>';
-                                        lot.recent_bidders.forEach(bidder => {
-                                            biddersHtml += `<li>${bidder.username} - ${bidder.amount}</li>`;
+                                        lot.unique_bidders.forEach(bidder => {
+                                            biddersHtml += `<li>${bidder.username} (${bidder.email}) - ${bidder.amount}</li>`;
                                         });
-                                        biddersHtml += lot.recent_bidders.length ? '</ul>' : '<li>Ставок не было</li></ul>';
+                                        biddersHtml += lot.unique_bidders.length ? '</ul>' : '<li>Ставок не было</li></ul>';
                                         finishedLotsEl.innerHTML += `
-                                        <div class="card">
-                                            <div class="card-body">
-                                                <h5>${lot.title}</h5>
-                                                <p>Финальная цена: ${lot.current_price || 'Нет ставок'}</p>
-                                                <h6>Последние 3 участника:</h6>
-                                                ${biddersHtml}
-                                                <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
-                                            </div>
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5>${lot.title}</h5>
+                                            <p>Финальная цена: ${lot.current_price || 'Нет ставок'}</p>
+                                            <h6>Топ-3 участников:</h6>
+                                            ${biddersHtml}
+                                            <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
                                         </div>
-                                    `;
+                                    </div>
+                                `;
                                     });
                                 } else {
                                     finishedLotsEl.innerHTML = '<p>Нет завершенных лотов.</p>';
@@ -234,14 +233,14 @@
                                 if (data.active_lots.length > 0) {
                                     data.active_lots.forEach(lot => {
                                         activeLotsEl.innerHTML += `
-                                        <div class="card">
-                                            <div class="card-body">
-                                                <h5>${lot.title}</h5>
-                                                <p>Текущая цена: ${lot.current_price || 'Нет ставок'}</p>
-                                                <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
-                                            </div>
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5>${lot.title}</h5>
+                                            <p>Текущая цена: ${lot.current_price || 'Нет ставок'}</p>
+                                            <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
                                         </div>
-                                    `;
+                                    </div>
+                                `;
                                     });
                                 } else {
                                     activeLotsEl.innerHTML = '<p>Нет активных аукционов.</p>';
@@ -252,14 +251,14 @@
                                 if (data.participated_lots.length > 0) {
                                     data.participated_lots.forEach(lot => {
                                         participatedLotsEl.innerHTML += `
-                                        <div class="card">
-                                            <div class="card-body">
-                                                <h5>${lot.title}</h5>
-                                                <p>Статус: ${lot.is_active ? 'Активен' : 'Завершен'}</p>
-                                                <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
-                                            </div>
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5>${lot.title}</h5>
+                                            <p>Статус: ${lot.is_active ? 'Активен' : 'Завершен'}</p>
+                                            <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
                                         </div>
-                                    `;
+                                    </div>
+                                `;
                                     });
                                 } else {
                                     participatedLotsEl.innerHTML = '<p>Вы не участвовали в аукционах.</p>';
@@ -273,14 +272,14 @@
                                 if (data.won_lots.length > 0) {
                                     data.won_lots.forEach(lot => {
                                         wonLotsEl.innerHTML += `
-                                        <div class="card">
-                                            <div class="card-body">
-                                                <h5>${lot.title}</h5>
-                                                <p>Финальная цена: ${lot.current_price || 'Нет ставок'}</p>
-                                                <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
-                                            </div>
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5>${lot.title}</h5>
+                                            <p>Финальная цена: ${lot.current_price || 'Нет ставок'}</p>
+                                            <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
                                         </div>
-                                    `;
+                                    </div>
+                                `;
                                     });
                                 } else {
                                     wonLotsEl.innerHTML = '<p>Вы не выиграли лоты.</p>';
@@ -291,14 +290,14 @@
                                 if (data.top_three_lots.length > 0) {
                                     data.top_three_lots.forEach(lot => {
                                         topThreeLotsEl.innerHTML += `
-                                        <div class="card">
-                                            <div class="card-body">
-                                                <h5>${lot.title}</h5>
-                                                <p>Финальная цена: ${lot.current_price || 'Нет ставок'}</p>
-                                                <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
-                                            </div>
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5>${lot.title}</h5>
+                                            <p>Финальная цена: ${lot.current_price || 'Нет ставок'}</p>
+                                            <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
                                         </div>
-                                    `;
+                                    </div>
+                                `;
                                     });
                                 } else {
                                     topThreeLotsEl.innerHTML = '<p>Вы не входили в топ-3 по ставкам.</p>';

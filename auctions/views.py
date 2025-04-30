@@ -240,44 +240,49 @@ class WinHistoryView(LoginRequiredMixin, View):
 
 class UserLotsView(LoginRequiredMixin, View):
     def get(self, request):
-        user = request.user
-        active_lots = Lot.objects.filter(created_by=user, auction_end__gt=timezone.now())
-        finished_lots = Lot.objects.filter(created_by=user, auction_end__lte=timezone.now())
-        recent_bidders = {}
-        for lot in finished_lots:
-            bids = lot.bids.values('user_id').distinct()[:3]
-            user_ids = [bid['user_id'] for bid in bids]
-            recent_bidders[lot.pk] = Bid.objects.filter(
-                lot=lot,
-                user_id__in=user_ids
-            ).order_by('user_id', '-created_at').distinct('user_id')
+        active_lots = Lot.objects.filter(created_by=request.user, auction_end__gt=timezone.now()).order_by('-created_at')
+        finished_lots = Lot.objects.filter(created_by=request.user, auction_end__lte=timezone.now()).order_by('-created_at')
 
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            # Формируем unique_bidders для каждого завершенного лота
+            finished_lots_data = []
+            for lot in finished_lots:
+                unique_bidders = lot.bids.values('user__username', 'user__email').annotate(max_amount=Max('amount')).order_by('-max_amount')[:3]
+                finished_lots_data.append({
+                    'title': lot.title,
+                    'id': lot.id,
+                    'current_price': float(lot.current_price) if lot.current_price else None,
+                    'unique_bidders': [
+                        {
+                            'username': bidder['user__username'],
+                            'email': bidder['user__email'],
+                            'amount': float(bidder['max_amount'])
+                        }
+                        for bidder in unique_bidders
+                    ]
+                })
+
             return JsonResponse({
                 'active_lots': [
                     {
-                        'id': lot.id,
                         'title': lot.title,
+                        'id': lot.id,
                         'current_price': float(lot.current_price) if lot.current_price else None,
                     } for lot in active_lots
                 ],
-                'finished_lots': [
-                    {
-                        'id': lot.id,
-                        'title': lot.title,
-                        'current_price': float(lot.current_price) if lot.current_price else None,
-                        'recent_bidders': [
-                            {
-                                'username': bid.user.username,
-                                'amount': float(bid.amount)
-                            } for bid in recent_bidders.get(lot.pk, [])
-                        ]
-                    } for lot in finished_lots
-                ]
+                'finished_lots': finished_lots_data
+            })
+
+        # Формируем unique_bidders для начального рендеринга
+        finished_lots_with_bidders = []
+        for lot in finished_lots:
+            unique_bidders = lot.bids.values('user__username', 'user__email').annotate(max_amount=Max('amount')).order_by('-max_amount')[:3]
+            finished_lots_with_bidders.append({
+                'lot': lot,
+                'unique_bidders': unique_bidders
             })
 
         return render(request, 'auctions/user_lots.html', {
             'active_lots': active_lots,
-            'finished_lots': finished_lots,
-            'recent_bidders': recent_bidders,
+            'finished_lots': finished_lots_with_bidders,
         })
