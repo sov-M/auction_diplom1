@@ -7,51 +7,180 @@ from .models import Lot, Bid, Comment
 from .forms import LotForm, BidForm, CommentForm
 from django.utils import timezone
 from django.contrib import messages
-from django.db.models import Q, Max
+from django.db.models import Q, Max, Count
 from datetime import timedelta
 from django.http import JsonResponse
 import json
 
 class HomeView(View):
     def get(self, request):
-        # Получаем только активные лоты (где is_active=True)
-        active_lots = Lot.objects.filter(is_active=True).order_by('-created_at')
-        # Разделяем на последние 3 и остальные
-        latest_lots = active_lots[:3]
-        other_lots = active_lots[3:]
+        # По умолчанию берём все лоты
+        lots = Lot.objects.all()
+        print(f"Initial lots: {lots.count()}")  # Отладка: общее количество лотов
 
+        # Фильтрация
+        search_query = request.GET.get('search', '')
+        category = request.GET.get('category', '')
+        tag = request.GET.get('tag', '')
+        condition = request.GET.get('condition', '')
+        location = request.GET.get('location', '')
+        sort_by = request.GET.get('sort_by', '')
+        expiring_soon = request.GET.get('expiring_soon', '')
+        active_only = request.GET.get('active_only', '')
+
+        # Логирование для отладки
+        print(f"Filters: search={search_query}, category={category}, tag={tag}, condition={condition}, location={location}, sort_by={sort_by}, expiring_soon={expiring_soon}, active_only={active_only}")
+        print(f"Categories: {Lot.CATEGORY_CHOICES}")
+        print(f"Conditions: {Lot.CONDITION_CHOICES}")
+
+        # Проверка, применены ли фильтры
+        filters_applied = any([
+            search_query,
+            category,
+            tag,
+            condition,
+            location,
+            sort_by,
+            expiring_soon,
+            active_only
+        ])
+
+        # Фильтр для активных лотов
+        if active_only:
+            lots = lots.filter(is_active=True, auction_end__gt=timezone.now())
+            print(f"After active_only filter: {lots.count()}")
+
+        # Поиск по названию
+        if search_query:
+            lots = lots.filter(Q(title__icontains=search_query))
+            print(f"After search filter: {lots.count()}")
+
+        # Фильтр по категории
+        if category:
+            lots = lots.filter(category=category)
+            print(f"After category filter: {lots.count()}")
+
+        # Фильтр по тегу
+        if tag:
+            lots = lots.filter(tags__icontains=tag)
+            print(f"After tag filter: {lots.count()}")
+
+        # Фильтр по состоянию
+        if condition:
+            lots = lots.filter(condition=condition)
+            print(f"After condition filter: {lots.count()}")
+
+        # Фильтр по местоположению (страна или город)
+        if location:
+            lots = lots.filter(
+                Q(location_country__icontains=location) | Q(location_city__icontains=location)
+            )
+            print(f"After location filter: {lots.count()}")
+
+        # Фильтр по лотам, заканчивающимся в течение 24 часов
+        if expiring_soon:
+            lots = lots.filter(
+                auction_end__lte=timezone.now() + timedelta(hours=24)
+            )
+            print(f"After expiring_soon filter: {lots.count()}")
+
+        # Сортировка
+        if sort_by == 'price_desc':
+            lots = lots.order_by('-current_price', '-initial_price')
+        elif sort_by == 'price_asc':
+            lots = lots.order_by('current_price', 'initial_price')
+        elif sort_by == 'date_desc':
+            lots = lots.order_by('-created_at')
+        elif sort_by == 'date_asc':
+            lots = lots.order_by('created_at')
+        elif sort_by == 'views_desc':
+            lots = lots.order_by('-views')
+        elif sort_by == 'views_asc':
+            lots = lots.order_by('views')
+        elif sort_by == 'bids_desc':
+            lots = lots.annotate(bid_count=Count('bids')).order_by('-bid_count')
+        elif sort_by == 'bids_asc':
+            lots = lots.annotate(bid_count=Count('bids')).order_by('bid_count')
+        else:
+            lots = lots.order_by('-created_at')  # По умолчанию
+
+        # Разделение на последние 3 и остальные, если фильтры НЕ применены
+        if not filters_applied:
+            latest_lots = lots[:3]
+            other_lots = lots[3:]
+            print(f"Latest lots: {latest_lots.count()}, Other lots: {other_lots.count()}")
+        else:
+            latest_lots = None  # Не используем разделение
+            other_lots = None
+            print(f"Filtered lots: {lots.count()}")
+
+        # Подготовка данных для AJAX
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({
-                'latest_lots': [
-                    {
-                        'id': lot.id,
-                        'title': lot.title,
-                        'main_image': lot.main_image.url if lot.main_image else None,
-                        'initial_price': float(lot.initial_price),
-                        'current_price': float(lot.current_price) if lot.current_price else None,
-                        'is_auction_ended': lot.is_auction_ended(),
-                        'time_until': lot.auction_end.isoformat() if not lot.is_auction_ended() else '',
-                        'last_bidder': lot.bids.first().user.username if lot.bids.exists() else None
-                    } for lot in latest_lots
-                ],
-                'other_lots': [
-                    {
-                        'id': lot.id,
-                        'title': lot.title,
-                        'main_image': lot.main_image.url if lot.main_image else None,
-                        'initial_price': float(lot.initial_price),
-                        'current_price': float(lot.current_price) if lot.current_price else None,
-                        'is_auction_ended': lot.is_auction_ended(),
-                        'time_until': lot.auction_end.isoformat() if not lot.is_auction_ended() else ''
-                    } for lot in other_lots
-                ]
-            })
+            if filters_applied:
+                return JsonResponse({
+                    'lots': [
+                        {
+                            'id': lot.id,
+                            'title': lot.title,
+                            'main_image': lot.main_image.url if lot.main_image else None,
+                            'initial_price': float(lot.initial_price),
+                            'current_price': float(lot.current_price) if lot.current_price else None,
+                            'is_auction_ended': lot.is_auction_ended(),
+                            'time_until': lot.auction_end.isoformat() if not lot.is_auction_ended() else '',
+                            'views': lot.views,
+                        } for lot in lots
+                    ]
+                })
+            else:
+                return JsonResponse({
+                    'latest_lots': [
+                        {
+                            'id': lot.id,
+                            'title': lot.title,
+                            'main_image': lot.main_image.url if lot.main_image else None,
+                            'initial_price': float(lot.initial_price),
+                            'current_price': float(lot.current_price) if lot.current_price else None,
+                            'is_auction_ended': lot.is_auction_ended(),
+                            'time_until': lot.auction_end.isoformat() if not lot.is_auction_ended() else '',
+                            'last_bidder': lot.bids.first().user.username if lot.bids.exists() else None,
+                            'views': lot.views,
+                        } for lot in latest_lots
+                    ],
+                    'other_lots': [
+                        {
+                            'id': lot.id,
+                            'title': lot.title,
+                            'main_image': lot.main_image.url if lot.main_image else None,
+                            'initial_price': float(lot.initial_price),
+                            'current_price': float(lot.current_price) if lot.current_price else None,
+                            'is_auction_ended': lot.is_auction_ended(),
+                            'time_until': lot.auction_end.isoformat() if not lot.is_auction_ended() else '',
+                            'views': lot.views,
+                        } for lot in other_lots
+                    ]
+                })
+
+        # Данные для формы фильтрации
+        categories = Lot.CATEGORY_CHOICES
+        conditions = Lot.CONDITION_CHOICES
 
         return render(request, 'auctions/home.html', {
-            'latest_lots': latest_lots,
-            'other_lots': other_lots,
+            'lots': lots if filters_applied else None,
+            'latest_lots': latest_lots if not filters_applied else None,
+            'other_lots': other_lots if not filters_applied else None,
+            'categories': categories,
+            'conditions': conditions,
+            'search_query': search_query,
+            'selected_category': category,
+            'selected_condition': condition,
+            'selected_tag': tag,
+            'selected_location': location,
+            'sort_by': sort_by,
+            'expiring_soon': expiring_soon,
+            'active_only': active_only,
+            'filters_applied': filters_applied,
         })
-
+        
 class LotDetailView(View):
     def get(self, request, pk):
         lot = get_object_or_404(Lot.objects.prefetch_related('bids__user', 'comments__user'), pk=pk)
@@ -59,6 +188,10 @@ class LotDetailView(View):
         bid_form = BidForm(lot=lot) if request.user.is_authenticated and not is_author else None
         comment_form = CommentForm() if request.user.is_authenticated else None
         unique_bidders = lot.bids.values('user__username').annotate(max_amount=Max('amount')).order_by('-max_amount')[:3]
+
+        # Увеличиваем количество просмотров
+        lot.views += 1
+        lot.save()
 
         location = "Не указано"
         if lot.location_country or lot.location_city:
@@ -96,72 +229,6 @@ class LotDetailView(View):
             'is_author': is_author,
             'unique_bidders': unique_bidders,
         })
-
-    def post(self, request, pk):
-        lot = get_object_or_404(Lot, pk=pk)
-        is_author = request.user.is_authenticated and lot.created_by == request.user
-
-        if not request.user.is_authenticated:
-            messages.error(request, "Авторизуйтесь, чтобы сделать ставку или оставить комментарий.")
-            return redirect('login')
-        
-        if 'cancel_lot' in request.POST and is_author:
-            if lot.has_bids():
-                messages.error(request, "Нельзя отменить лот, на который уже сделаны ставки.")
-            else:
-                lot.delete()
-                messages.success(request, "Лот успешно отменен.")
-            return redirect('user_lots')
-
-        if is_author and 'bid' in request.POST:
-            messages.error(request, "Вы не можете делать ставки на свой лот.")
-            return redirect('lot_detail', pk=lot.pk)
-
-        if lot.is_auction_ended():
-            messages.error(request, "Аукцион завершён, действия больше не доступны.")
-            return redirect('lot_detail', pk=pk)
-
-        if 'bid' in request.POST:
-            if is_author:
-                messages.error(request, "Вы не можете делать ставки на свой лот.")
-                return redirect('lot_detail', pk=pk)
-            
-            # Проверка на максимум 3 активных лота для участия
-            active_bidded_lots = Lot.objects.filter(
-                bids__user=request.user,
-                is_active=True,
-                auction_end__gt=timezone.now()
-            ).distinct().count()
-            if active_bidded_lots >= 3:
-                messages.error(request, "Вы не можете участвовать более чем в 3 лотах одновременно.")
-                return redirect('lot_detail', pk=pk)
-            
-            bid_form = BidForm(request.POST, lot=lot)
-            if bid_form.is_valid():
-                bid = bid_form.save(commit=False)
-                bid.user = request.user
-                bid.lot = lot
-                bid.save()
-                lot.current_price = bid.amount
-                lot.save()
-                messages.success(request, "Ваша ставка успешно принята.")
-            else:
-                messages.error(request, "Ошибка в ставке. Проверьте введённую сумму.")
-            return redirect('lot_detail', pk=pk)
-
-        if 'comment' in request.POST:
-            comment_form = CommentForm(request.POST)
-            if comment_form.is_valid():
-                comment = comment_form.save(commit=False)
-                comment.user = request.user
-                comment.lot = lot
-                comment.save()
-                messages.success(request, "Комментарий успешно добавлен.")
-            else:
-                messages.error(request, "Ошибка в комментарии. Проверьте введённые данные.")
-            return redirect('lot_detail', pk=pk)
-
-        return redirect('lot_detail', pk=pk)
 
 class CreateLotView(LoginRequiredMixin, View):
     def get(self, request):

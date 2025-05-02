@@ -1,58 +1,165 @@
 <!-- templates/auctions/home.html -->
-
 {% extends 'base.html' %}
-{% block page_id %}home{% endblock %}
 {% block content %}
-<h1>Аукционы</h1>
+<h1>Активные лоты</h1>
 
-<h2>Последние лоты</h2>
-<div class="row" id="latest-lots">
-    {% for lot in latest_lots %}
-    <div class="col-md-4">
-        <div class="card">
-            {% if lot.main_image %}
-            <img src="{{ lot.main_image.url }}" class="card-img-top" alt="{{ lot.title }}">
-            {% endif %}
-            <div class="card-body">
-                <h5 class="card-title">{{ lot.title }}</h5>
-                {% if not lot.is_auction_ended %}
-                <p>Время до окончания: {{ lot.auction_end|timeuntil }}</p>
-                {% endif %}
-                <p>Начальная цена: {{ lot.initial_price }}</p>
-                <p>Текущая цена: {{ lot.current_price|default:"Нет ставок" }}</p>
-                <p>Статус: {% if not lot.is_auction_ended %}Активен{% else %}Завершен{% endif %}</p>
-                <p>Последняя ставка: {{ lot.bids.first.user.username|default:"Нет участников" }}</p>
-                <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
-            </div>
-        </div>
+<!-- Форма фильтрации -->
+<form method="get" class="filter-form">
+    <div class="filter-group">
+        <label for="search">Поиск по названию:</label>
+        <input type="text" name="search" id="search" value="{{ search_query }}" placeholder="Введите название">
     </div>
-    {% empty %}
-    <p>Нет активных лотов.</p>
-    {% endfor %}
-</div>
 
-<h2>Другие лоты</h2>
-<div class="row" id="other-lots">
-    {% for lot in other_lots %}
-    <div class="col-md-4">
-        <div class="card">
-            {% if lot.main_image %}
-            <img src="{{ lot.main_image.url }}" class="card-img-top" alt="{{ lot.title }}">
-            {% endif %}
-            <div class="card-body">
-                <h5 class="card-title">{{ lot.title }}</h5>
-                {% if not lot.is_auction_ended %}
-                <p>Время до окончания: {{ lot.auction_end|timeuntil }}</p>
-                {% endif %}
-                <p>Начальная цена: {{ lot.initial_price }}</p>
-                <p>Текущая цена: {{ lot.current_price|default:"Нет ставок" }}</p>
-                <p>Статус: {% if not lot.is_auction_ended %}Активен{% else %}Завершен{% endif %}</p>
-                <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
-            </div>
-        </div>
+    <div class="filter-group">
+        <label for="category">Категория:</label>
+        <select name="category" id="category">
+            <option value="">Все категории</option>
+            {% for cat_value, cat_label in categories %}
+            <option value="{{ cat_value }}" {% if selected_category == cat_value %}selected{% endif %}>
+                {{ cat_label }}
+            </option>
+            {% endfor %}
+        </select>
     </div>
-    {% empty %}
-    <p>Нет других лотов.</p>
-    {% endfor %}
-</div>
+
+    <div class="filter-group">
+        <label for="condition">Состояние:</label>
+        <select name="condition" id="condition">
+            <option value="">Все состояния</option>
+            {% for cond_value, cond_label in conditions %}
+            <option value="{{ cond_value }}" {% if selected_condition == cond_value %}selected{% endif %}>
+                {{ cond_label }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="filter-group">
+        <label for="tag">Тег:</label>
+        <input type="text" name="tag" id="tag" value="{{ selected_tag }}" placeholder="Введите тег">
+    </div>
+
+    <div class="filter-group">
+        <label for="location">Местоположение:</label>
+        <input type="text" name="location" id="location" value="{{ selected_location }}" placeholder="Страна или город">
+    </div>
+
+    <div class="filter-group">
+        <label for="sort_by">Сортировка:</label>
+        <select name="sort_by" id="sort_by">
+            <option value="">По умолчанию</option>
+            <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>Цена (убывание)</option>
+            <option value="price_asc" {% if sort_by == 'price_asc' %}selected{% endif %}>Цена (возрастание)</option>
+            <option value="date_desc" {% if sort_by == 'date_desc' %}selected{% endif %}>Дата (новые)</option>
+            <option value="date_asc" {% if sort_by == 'date_asc' %}selected{% endif %}>Дата (старые)</option>
+            <option value="views_desc" {% if sort_by == 'views_desc' %}selected{% endif %}>Просмотры (больше)</option>
+            <option value="views_asc" {% if sort_by == 'views_asc' %}selected{% endif %}>Просмотры (меньше)</option>
+            <option value="bids_desc" {% if sort_by == 'bids_desc' %}selected{% endif %}>Ставки (больше)</option>
+            <option value="bids_asc" {% if sort_by == 'bids_asc' %}selected{% endif %}>Ставки (меньше)</option>
+        </select>
+    </div>
+
+    <div class="filter-group">
+        <label for="expiring_soon">
+            <input type="checkbox" name="expiring_soon" id="expiring_soon" value="1" {% if expiring_soon %}checked{% endif %}>
+            Скоро заканчивающиеся (в течение 24 часов)
+        </label>
+    </div>
+
+    <div class="filter-group">
+        <label for="active_only">
+            <input type="checkbox" name="active_only" id="active_only" value="1" {% if active_only %}checked{% endif %}>
+            Только активные лоты
+        </label>
+    </div>
+
+    <button type="submit">Применить фильтры</button>
+    <a href="{% url 'home' %}">Сбросить фильтры</a>
+</form>
+
+<!-- Стили для формы -->
+<style>
+    .filter-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .filter-group label {
+        margin-bottom: 5px;
+    }
+
+    .filter-group input,
+    .filter-group select {
+        padding: 5px;
+        width: 200px;
+    }
+</style>
+
+<!-- Отображение лотов -->
+{% if filters_applied %}
+    <h2>Отфильтрованные лоты</h2>
+    <div class="lot-list">
+        {% for lot in lots %}
+        <div class="lot">
+            <h3><a href="{% url 'lot_detail' lot.pk %}">{{ lot.title }}</a></h3>
+            {% if lot.main_image %}
+            <img src="{{ lot.main_image.url }}" alt="{{ lot.title }}" style="max-width: 200px;">
+            {% endif %}
+            <p>Начальная цена: {{ lot.initial_price }} руб.</p>
+            <p>Текущая цена: {% if lot.current_price %}{{ lot.current_price }} руб.{% else %}Нет ставок{% endif %}</p>
+            <p>Просмотры: {{ lot.views }}</p>
+            <p>Окончание аукциона: {{ lot.auction_end }}</p>
+            <p>Статус: {% if lot.is_auction_ended %}Завершён{% else %}Активен{% endif %}</p>
+        </div>
+        {% empty %}
+        <p>Нет лотов, соответствующих фильтрам.</p>
+        {% endfor %}
+    </div>
+{% else %}
+    <h2>Последние лоты</h2>
+    <div class="lot-list">
+        {% for lot in latest_lots %}
+        <div class="lot">
+            <h3><a href="{% url 'lot_detail' lot.pk %}">{{ lot.title }}</a></h3>
+            {% if lot.main_image %}
+            <img src="{{ lot.main_image.url }}" alt="{{ lot.title }}" style="max-width: 200px;">
+            {% endif %}
+            <p>Начальная цена: {{ lot.initial_price }} руб.</p>
+            <p>Текущая цена: {% if lot.current_price %}{{ lot.current_price }} руб.{% else %}Нет ставок{% endif %}</p>
+            <p>Просмотры: {{ lot.views }}</p>
+            <p>Окончание аукциона: {{ lot.auction_end }}</p>
+            <p>Статус: {% if lot.is_auction_ended %}Завершён{% else %}Активен{% endif %}</p>
+        </div>
+        {% empty %}
+        <p>Нет лотов, соответствующих фильтрам.</p>
+        {% endfor %}
+    </div>
+
+    <h2>Другие лоты</h2>
+    <div>DEBUG: other_lots count={{ other_lots|length }}</div>
+    <div class="lot-list">
+        {% for lot in other_lots %}
+        <div class="lot">
+            <h3><a href="{% url 'lot_detail' lot.pk %}">{{ lot.title }}</a></h3>
+            {% if lot.main_image %}
+            <img src="{{ lot.main_image.url }}" alt="{{ lot.title }}" style="max-width: 200px;">
+            {% endif %}
+            <p>Начальная цена: {{ lot.initial_price }} руб.</p>
+            <p>Текущая цена: {% if lot.current_price %}{{ lot.current_price }} руб.{% else %}Нет ставок{% endif %}</p>
+            <p>Просмотры: {{ lot.views }}</p>
+            <p>Окончание аукциона: {{ lot.auction_end }}</p>
+            <p>Статус: {% if lot.is_auction_ended %}Завершён{% else %}Активен{% endif %}</p>
+        </div>
+        {% empty %}
+        <p>Нет других лотов.</p>
+        {% endfor %}
+    </div>
+{% endif %}
 {% endblock %}

@@ -44,8 +44,8 @@ class Lot(models.Model):
     auction_end = models.DateTimeField()
     category = models.CharField(max_length=100, choices=CATEGORY_CHOICES, default='Транспорт')
     is_active = models.BooleanField(default=True)
+    views = models.PositiveIntegerField(default=0, verbose_name='Просмотры')  # Новое поле
 
-    # Новые поля
     condition = models.CharField(
         max_length=20,
         choices=CONDITION_CHOICES,
