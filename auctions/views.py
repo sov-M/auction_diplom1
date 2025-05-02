@@ -60,7 +60,6 @@ class LotDetailView(View):
         comment_form = CommentForm() if request.user.is_authenticated else None
         unique_bidders = lot.bids.values('user__username').annotate(max_amount=Max('amount')).order_by('-max_amount')[:3]
 
-        # Формируем строку местоположения
         location = "Не указано"
         if lot.location_country or lot.location_city:
             location = lot.location_country
@@ -110,7 +109,7 @@ class LotDetailView(View):
             if lot.has_bids():
                 messages.error(request, "Нельзя отменить лот, на который уже сделаны ставки.")
             else:
-                lot.delete()  # Удаляем лот
+                lot.delete()
                 messages.success(request, "Лот успешно отменен.")
             return redirect('user_lots')
 
@@ -126,6 +125,17 @@ class LotDetailView(View):
             if is_author:
                 messages.error(request, "Вы не можете делать ставки на свой лот.")
                 return redirect('lot_detail', pk=pk)
+            
+            # Проверка на максимум 3 активных лота для участия
+            active_bidded_lots = Lot.objects.filter(
+                bids__user=request.user,
+                is_active=True,
+                auction_end__gt=timezone.now()
+            ).distinct().count()
+            if active_bidded_lots >= 3:
+                messages.error(request, "Вы не можете участвовать более чем в 3 лотах одновременно.")
+                return redirect('lot_detail', pk=pk)
+            
             bid_form = BidForm(request.POST, lot=lot)
             if bid_form.is_valid():
                 bid = bid_form.save(commit=False)
@@ -159,6 +169,16 @@ class CreateLotView(LoginRequiredMixin, View):
         return render(request, 'auctions/create_lot.html', {'form': form})
 
     def post(self, request):
+        # Проверка на максимум 3 активных лота
+        active_lots_count = Lot.objects.filter(
+            created_by=request.user,
+            is_active=True,
+            auction_end__gt=timezone.now()
+        ).count()
+        if active_lots_count >= 3:
+            messages.error(request, "Вы не можете иметь более 3 активных лотов одновременно.")
+            return render(request, 'auctions/create_lot.html', {'form': LotForm()})
+
         form = LotForm(request.POST, request.FILES)
         if form.is_valid():
             lot = form.save(commit=False)
