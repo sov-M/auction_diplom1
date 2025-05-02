@@ -1,5 +1,4 @@
 #auctions/views.py
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -52,16 +51,24 @@ class HomeView(View):
             'latest_lots': latest_lots,
             'other_lots': other_lots,
         })
-        
-        
+
 class LotDetailView(View):
     def get(self, request, pk):
         lot = get_object_or_404(Lot.objects.prefetch_related('bids__user', 'comments__user'), pk=pk)
         is_author = request.user.is_authenticated and lot.created_by == request.user
         bid_form = BidForm(lot=lot) if request.user.is_authenticated and not is_author else None
         comment_form = CommentForm() if request.user.is_authenticated else None
-        unique_bidders = lot.bids.values('user__username').annotate(max_amount=Max('amount')).order_by('-max_amount')[:3]  # Ограничиваем тремя
-        
+        unique_bidders = lot.bids.values('user__username').annotate(max_amount=Max('amount')).order_by('-max_amount')[:3]
+
+        # Формируем строку местоположения
+        location = "Не указано"
+        if lot.location_country or lot.location_city:
+            location = lot.location_country
+            if lot.location_country and lot.location_city:
+                location += ", " + lot.location_city
+            elif lot.location_city:
+                location = lot.location_city
+
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             bidders = [
                 {'username': bidder['user__username'], 'amount': float(bidder['max_amount'])}
@@ -84,6 +91,7 @@ class LotDetailView(View):
 
         return render(request, 'auctions/lot_detail.html', {
             'lot': lot,
+            'location': location,
             'bid_form': bid_form,
             'comment_form': comment_form,
             'is_author': is_author,
@@ -91,64 +99,59 @@ class LotDetailView(View):
         })
 
     def post(self, request, pk):
-        lot = get_object_or_404(Lot.objects.prefetch_related('bids__user', 'comments__user'), pk=pk)
+        lot = get_object_or_404(Lot, pk=pk)
         is_author = request.user.is_authenticated and lot.created_by == request.user
+
         if not request.user.is_authenticated:
             messages.error(request, "Авторизуйтесь, чтобы сделать ставку или оставить комментарий.")
             return redirect('login')
+        
+        if 'cancel_lot' in request.POST and is_author:
+            if lot.has_bids():
+                messages.error(request, "Нельзя отменить лот, на который уже сделаны ставки.")
+            else:
+                lot.delete()  # Удаляем лот
+                messages.success(request, "Лот успешно отменен.")
+            return redirect('user_lots')
 
         if is_author and 'bid' in request.POST:
             messages.error(request, "Вы не можете делать ставки на свой лот.")
             return redirect('lot_detail', pk=lot.pk)
 
+        if lot.is_auction_ended():
+            messages.error(request, "Аукцион завершён, действия больше не доступны.")
+            return redirect('lot_detail', pk=pk)
+
         if 'bid' in request.POST:
+            if is_author:
+                messages.error(request, "Вы не можете делать ставки на свой лот.")
+                return redirect('lot_detail', pk=pk)
             bid_form = BidForm(request.POST, lot=lot)
             if bid_form.is_valid():
-                if lot.is_auction_ended():
-                    messages.error(request, "Аукцион завершен.")
-                    return redirect('lot_detail', pk=lot.pk)
-                last_bid = lot.bids.first()
-                if last_bid and last_bid.user == request.user:
-                    messages.error(request, "Вы не можете сделать новую ставку, пока другой пользователь не перебьёт вашу.")
-                    return redirect('lot_detail', pk=lot.pk)
                 bid = bid_form.save(commit=False)
                 bid.user = request.user
                 bid.lot = lot
                 bid.save()
                 lot.current_price = bid.amount
                 lot.save()
-                messages.success(request, "Ставка успешно сделана.")
-                return redirect('lot_detail', pk=lot.pk)
-        elif 'comment' in request.POST:
-            if lot.is_auction_ended():
-                messages.error(request, "Комментарии нельзя оставлять после завершения аукциона.")
-                return redirect('lot_detail', pk=lot.pk)
-            if request.user.is_authenticated:
-                last_comment = Comment.objects.filter(
-                    user=request.user,
-                    created_at__gte=timezone.now() - timedelta(minutes=1)
-                ).order_by('-created_at').first()
-                if last_comment:
-                    messages.error(request, "Вы можете оставлять комментарий не чаще одного раза в минуту.")
-                    return redirect('lot_detail', pk=lot.pk)
+                messages.success(request, "Ваша ставка успешно принята.")
+            else:
+                messages.error(request, "Ошибка в ставке. Проверьте введённую сумму.")
+            return redirect('lot_detail', pk=pk)
 
+        if 'comment' in request.POST:
             comment_form = CommentForm(request.POST)
             if comment_form.is_valid():
                 comment = comment_form.save(commit=False)
                 comment.user = request.user
                 comment.lot = lot
                 comment.save()
-                messages.success(request, "Комментарий добавлен.")
-                return redirect('lot_detail', pk=lot.pk)
+                messages.success(request, "Комментарий успешно добавлен.")
+            else:
+                messages.error(request, "Ошибка в комментарии. Проверьте введённые данные.")
+            return redirect('lot_detail', pk=pk)
 
-        unique_bidders = lot.bids.values('user__username').annotate(max_amount=Max('amount')).order_by('-max_amount')[:4]  # Ограничиваем тремя
-        return render(request, 'auctions/lot_detail.html', {
-            'lot': lot,
-            'bid_form': BidForm(lot=lot) if not is_author else None,
-            'comment_form': CommentForm(),
-            'is_author': is_author,
-            'unique_bidders': unique_bidders,
-        })
+        return redirect('lot_detail', pk=pk)
 
 class CreateLotView(LoginRequiredMixin, View):
     def get(self, request):
@@ -164,6 +167,27 @@ class CreateLotView(LoginRequiredMixin, View):
             messages.success(request, "Лот успешно создан.")
             return redirect('home')
         return render(request, 'auctions/create_lot.html', {'form': form})
+
+class EditLotView(LoginRequiredMixin, View):
+    def get(self, request, pk):
+        lot = get_object_or_404(Lot, pk=pk, created_by=request.user)
+        if lot.has_bids():
+            messages.error(request, "Нельзя редактировать лот, на который уже сделаны ставки.")
+            return redirect('lot_detail', pk=lot.pk)
+        form = LotForm(instance=lot)
+        return render(request, 'auctions/edit_lot.html', {'form': form, 'lot': lot})
+
+    def post(self, request, pk):
+        lot = get_object_or_404(Lot, pk=pk, created_by=request.user)
+        if lot.has_bids():
+            messages.error(request, "Нельзя редактировать лот, на который уже сделаны ставки.")
+            return redirect('lot_detail', pk=lot.pk)
+        form = LotForm(request.POST, request.FILES, instance=lot)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Лот успешно отредактирован.")
+            return redirect('lot_detail', pk=lot.pk)
+        return render(request, 'auctions/edit_lot.html', {'form': form, 'lot': lot})
 
 class ProfileView(LoginRequiredMixin, View):
     def get(self, request):
@@ -247,7 +271,6 @@ class UserLotsView(LoginRequiredMixin, View):
         finished_lots = Lot.objects.filter(created_by=request.user, auction_end__lte=timezone.now()).order_by('-created_at')
 
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            # Формируем unique_bidders для каждого завершенного лота
             finished_lots_data = []
             for lot in finished_lots:
                 unique_bidders = lot.bids.values('user__username', 'user__email').annotate(max_amount=Max('amount')).order_by('-max_amount')[:3]
@@ -276,7 +299,6 @@ class UserLotsView(LoginRequiredMixin, View):
                 'finished_lots': finished_lots_data
             })
 
-        # Формируем unique_bidders для начального рендеринга
         finished_lots_with_bidders = []
         for lot in finished_lots:
             unique_bidders = lot.bids.values('user__username', 'user__email').annotate(max_amount=Max('amount')).order_by('-max_amount')[:3]
@@ -289,3 +311,14 @@ class UserLotsView(LoginRequiredMixin, View):
             'active_lots': active_lots,
             'finished_lots': finished_lots_with_bidders,
         })
+
+    def post(self, request):
+        if 'cancel_lot' in request.POST:
+            lot_id = request.POST.get('lot_id')
+            lot = get_object_or_404(Lot, pk=lot_id, created_by=request.user)
+            if lot.has_bids():
+                messages.error(request, "Нельзя отменить лот, на который уже сделаны ставки.")
+            else:
+                lot.delete()
+                messages.success(request, "Лот успешно отменен.")
+        return redirect('user_lots')

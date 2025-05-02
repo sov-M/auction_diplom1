@@ -1,6 +1,7 @@
 <!-- templates/auctions/user_lots.html -->
 {% extends 'base.html' %}
 {% block page_id %}user_lots{% endblock %}
+
 {% block content %}
 <h1>Мои лоты</h1>
 
@@ -12,6 +13,16 @@
             <h5>{{ lot.title }}</h5>
             <p>Текущая цена: {{ lot.current_price|default:"Нет ставок" }}</p>
             <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
+            {% if not lot.has_bids %}
+            <a href="{% url 'edit_lot' lot.pk %}" class="btn btn-warning">Редактировать</a>
+            <form method="post" style="display:inline;"
+                onsubmit="return confirm('Вы уверены, что хотите отменить лот?');">
+                {% csrf_token %}
+                <input type="hidden" name="cancel_lot" value="true">
+                <input type="hidden" name="lot_id" value="{{ lot.pk }}">
+                <button type="submit" class="btn btn-danger">Отменить лот</button>
+            </form>
+            {% endif %}
         </div>
     </div>
     {% empty %}
@@ -27,17 +38,13 @@
             <h5>{{ entry.lot.title }}</h5>
             <p>Финальная цена: {{ entry.lot.current_price|default:"Нет ставок" }}</p>
             <h6>Топ-3 участников:</h6>
-            {% if entry.unique_bidders %}
             <ul>
                 {% for bidder in entry.unique_bidders %}
                 <li>{{ bidder.user__username }} ({{ bidder.user__email }}) - {{ bidder.max_amount }}</li>
+                {% empty %}
+                <li>Ставок не было</li>
                 {% endfor %}
             </ul>
-            {% else %}
-            <ul>
-                <li>Ставок не было</li>
-            </ul>
-            {% endif %}
             <a href="{% url 'lot_detail' entry.lot.pk %}" class="btn btn-primary">Подробнее</a>
         </div>
     </div>

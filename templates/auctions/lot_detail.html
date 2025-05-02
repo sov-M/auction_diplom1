@@ -1,5 +1,4 @@
 <!-- templates/auctions/lot_detail.html -->
-
 {% extends 'base.html' %}
 {% block page_id %}lot_detail{% endblock %}
 {% block content %}
@@ -31,6 +30,9 @@
         <p>Автор: {{ lot.created_by.username }}</p>
         <p>Начальная цена: {{ lot.initial_price }}</p>
         <p>Текущая ставка: <span id="current-price">{{ lot.current_price|default:"Нет ставок" }}</span></p>
+        <p>Состояние: {{ lot.get_condition_display }}</p>
+        <p>Теги: {{ lot.tags|default:"Не указаны" }}</p>
+        <p>Местоположение: {{ location }}</p>
         <div id="bidders-list">
             {% if unique_bidders %}
             <p>Все участники:</p>
@@ -49,6 +51,14 @@
         {% if user.is_authenticated and not lot.is_auction_ended %}
         {% if is_author %}
         <p>Вы не можете делать ставки на свой лот.</p>
+        {% if not lot.has_bids %}
+        <a href="{% url 'edit_lot' lot.pk %}" class="btn btn-warning">Редактировать лот</a>
+        <form method="post" style="display:inline;" onsubmit="return confirm('Вы уверены, что хотите отменить лот?');">
+            {% csrf_token %}
+            <input type="hidden" name="cancel_lot" value="true">
+            <button type="submit" class="btn btn-danger">Отменить лот</button>
+        </form>
+        {% endif %}
         {% else %}
         <form method="post" id="bid-form">
             {% csrf_token %}

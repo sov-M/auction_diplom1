@@ -9,14 +9,18 @@ class LotForm(forms.ModelForm):
     class Meta:
         model = Lot
         fields = [
-            'title', 'description', 'initial_price', 'main_image', 
+            'title', 'description', 'initial_price', 'main_image',
             'additional_image_1', 'additional_image_2', 'additional_image_3',
-            'auction_end', 'category'
+            'auction_end', 'category', 'condition', 'tags', 'location_country', 'location_city'
         ]
         widgets = {
             'auction_end': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
             'description': forms.Textarea(attrs={'rows': 5}),
             'category': forms.Select(),
+            'condition': forms.Select(),
+            'tags': forms.TextInput(attrs={'placeholder': 'Введите теги через запятую (например: антиквариат, винтаж)'}),
+            'location_country': forms.TextInput(attrs={'placeholder': 'Введите страну'}),
+            'location_city': forms.TextInput(attrs={'placeholder': 'Введите город'}),
         }
 
     def clean_auction_end(self):
@@ -24,7 +28,6 @@ class LotForm(forms.ModelForm):
         if auction_end <= timezone.now():
             raise forms.ValidationError("Дата окончания аукциона должна быть в будущем.")
         return auction_end
-
 
 class BidForm(forms.ModelForm):
     class Meta:
@@ -43,7 +46,6 @@ class BidForm(forms.ModelForm):
             if self.lot.current_price and amount <= self.lot.current_price:
                 raise forms.ValidationError("Ставка должна быть выше текущей.")
         return amount
-
 
 class CommentForm(forms.ModelForm):
     class Meta:

@@ -23,6 +23,14 @@ class Lot(models.Model):
         ('Мебель', 'Мебель'),
     ]
 
+    CONDITION_CHOICES = [
+        ('new', 'Новое'),
+        ('used', 'Б/У'),
+        ('not_specified', 'Не указано'),
+        ('damaged', 'Повреждено'),
+        ('refurbished', 'Восстановлено'),
+    ]
+
     title = models.CharField(max_length=200)
     description = models.TextField()
     initial_price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -37,12 +45,38 @@ class Lot(models.Model):
     category = models.CharField(max_length=100, choices=CATEGORY_CHOICES, default='Транспорт')
     is_active = models.BooleanField(default=True)
 
+    # Новые поля
+    condition = models.CharField(
+        max_length=20,
+        choices=CONDITION_CHOICES,
+        default='not_specified',
+        verbose_name='Состояние'
+    )
+    tags = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text='Введите теги через запятую (например: антиквариат, винтаж, редкий)',
+        verbose_name='Теги'
+    )
+    location_country = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='Страна'
+    )
+    location_city = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='Город'
+    )
+
     def is_auction_ended(self):
         return timezone.now() > self.auction_end
 
+    def has_bids(self):
+        return self.bids.exists()
+
     def __str__(self):
         return self.title
-
 
 class Bid(models.Model):
     lot = models.ForeignKey(Lot, on_delete=models.CASCADE, related_name='bids')
@@ -56,7 +90,6 @@ class Bid(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.amount} on {self.lot.title}"
 
-
 class Comment(models.Model):
     lot = models.ForeignKey(Lot, on_delete=models.CASCADE, related_name='comments')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
@@ -65,7 +98,6 @@ class Comment(models.Model):
     
     class Meta:
         ordering = ['-created_at']
-
 
     def __str__(self):
         return f"Comment by {self.user.username} on {self.lot.title}"

@@ -1,0 +1,13 @@
+<!-- templates/auction/edit_lot.html -->
+
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Редактировать лот: {{ lot.title }}</h1>
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-success">Сохранить изменения</button>
+    <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-secondary">Отмена</a>
+</form>
+{% endblock %}
