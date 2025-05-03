@@ -1,7 +1,5 @@
-#auctions/forms.py
-
 from django import forms
-from .models import Lot, Comment, Bid
+from .models import Lot, Comment, Bid, AutoBid
 from django.utils import timezone
 
 
@@ -11,7 +9,8 @@ class LotForm(forms.ModelForm):
         fields = [
             'title', 'description', 'initial_price', 'main_image',
             'additional_image_1', 'additional_image_2', 'additional_image_3',
-            'auction_end', 'category', 'condition', 'tags', 'location_country', 'location_city'
+            'auction_end', 'category', 'condition', 'tags', 'location_country',
+            'location_city', 'bid_step'
         ]
         widgets = {
             'auction_end': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
@@ -21,6 +20,7 @@ class LotForm(forms.ModelForm):
             'tags': forms.TextInput(attrs={'placeholder': 'Введите теги через запятую (например: антиквариат, винтаж)'}),
             'location_country': forms.TextInput(attrs={'placeholder': 'Введите страну'}),
             'location_city': forms.TextInput(attrs={'placeholder': 'Введите город'}),
+            'bid_step': forms.NumberInput(attrs={'step': '1.00', 'min': '1.00'}),
         }
 
     def clean_auction_end(self):
@@ -28,6 +28,13 @@ class LotForm(forms.ModelForm):
         if auction_end <= timezone.now():
             raise forms.ValidationError("Дата окончания аукциона должна быть в будущем.")
         return auction_end
+
+    def clean_bid_step(self):
+        bid_step = self.cleaned_data['bid_step']
+        if bid_step < 1.00:
+            raise forms.ValidationError("Минимальный шаг ставки должен быть не менее 1.00.")
+        return bid_step
+
 
 class BidForm(forms.ModelForm):
     class Meta:
@@ -40,12 +47,45 @@ class BidForm(forms.ModelForm):
 
     def clean_amount(self):
         amount = self.cleaned_data['amount']
-        if self.lot:
-            if amount <= self.lot.initial_price:
-                raise forms.ValidationError("Ставка должна быть выше начальной цены.")
-            if self.lot.current_price and amount <= self.lot.current_price:
-                raise forms.ValidationError("Ставка должна быть выше текущей.")
+        if not self.lot:
+            raise forms.ValidationError("Лот не указан.")
+        min_amount = self.lot.initial_price
+        if self.lot.current_price:
+            min_amount = self.lot.current_price + self.lot.bid_step
+        else:
+            min_amount = self.lot.initial_price + self.lot.bid_step
+        if amount < min_amount:
+            raise forms.ValidationError(
+                f"Ставка должна быть не менее {min_amount} (текущая цена + шаг {self.lot.bid_step})."
+            )
         return amount
+
+
+class AutoBidForm(forms.ModelForm):
+    class Meta:
+        model = AutoBid
+        fields = ['max_amount']
+
+    def __init__(self, *args, **kwargs):
+        self.lot = kwargs.pop('lot', None)
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+    def clean_max_amount(self):
+        max_amount = self.cleaned_data['max_amount']
+        if not self.lot:
+            raise forms.ValidationError("Лот не указан.")
+        min_amount = self.lot.initial_price
+        if self.lot.current_price:
+            min_amount = self.lot.current_price + self.lot.bid_step
+        else:
+            min_amount = self.lot.initial_price + self.lot.bid_step
+        if max_amount < min_amount:
+            raise forms.ValidationError(
+                f"Максимальная ставка должна быть не менее {min_amount} (текущая цена + шаг {self.lot.bid_step})."
+            )
+        return max_amount
+
 
 class CommentForm(forms.ModelForm):
     class Meta:

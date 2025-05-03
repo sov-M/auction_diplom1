@@ -30,6 +30,7 @@
         <p>Автор: {{ lot.created_by.username }}</p>
         <p>Начальная цена: {{ lot.initial_price }}</p>
         <p>Текущая ставка: <span id="current-price">{{ lot.current_price|default:"Нет ставок" }}</span></p>
+        <p>Минимальный шаг ставки: {{ lot.bid_step }}</p>
         <p>Состояние: {{ lot.get_condition_display }}</p>
         <p>Теги: {{ lot.tags|default:"Не указаны" }}</p>
         <p>Местоположение: {{ location }}</p>
@@ -60,11 +61,41 @@
         </form>
         {% endif %}
         {% else %}
+        <h4>Сделать ставку</h4>
         <form method="post" id="bid-form">
             {% csrf_token %}
             {{ bid_form }}
             <button type="submit" name="bid" class="btn btn-success">Сделать ставку</button>
         </form>
+        <h4>Установить автоматическую ставку</h4>
+        {% if user_auto_bid %}
+        {% if not current_bid or current_bid.amount != lot.current_price %}
+        <p>Ваша автоматическая ставка: {{ user_auto_bid.max_amount }} (перебита)</p>
+        <form method="post" id="auto-bid-form">
+            {% csrf_token %}
+            {{ auto_bid_form }}
+            <button type="submit" name="auto_bid" class="btn btn-primary">Установить новую автоставку</button>
+        </form>
+        <form method="post" style="display:inline;" onsubmit="return confirm('Удалить автоматическую ставку?');">
+            {% csrf_token %}
+            <input type="hidden" name="remove_auto_bid" value="true">
+            <button type="submit" class="btn btn-danger">Удалить автоставку</button>
+        </form>
+        {% else %}
+        <p>Ваша автоматическая ставка: {{ user_auto_bid.max_amount }} (лидирует)</p>
+        <form method="post" style="display:inline;" onsubmit="return confirm('Удалить автоматическую ставку?');">
+            {% csrf_token %}
+            <input type="hidden" name="remove_auto_bid" value="true">
+            <button type="submit" class="btn btn-danger">Удалить автоставку</button>
+        </form>
+        {% endif %}
+        {% else %}
+        <form method="post" id="auto-bid-form">
+            {% csrf_token %}
+            {{ auto_bid_form }}
+            <button type="submit" name="auto_bid" class="btn btn-primary">Установить автоставку</button>
+        </form>
+        {% endif %}
         {% endif %}
         {% elif lot.is_auction_ended %}
         <p id="auction-ended-message">Аукцион завершен.</p>

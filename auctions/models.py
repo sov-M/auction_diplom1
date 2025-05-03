@@ -1,11 +1,8 @@
-#auctions/models.py
-
-
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from users.models import User
-
+from django.core.validators import MinValueValidator
 
 class Lot(models.Model):
     CATEGORY_CHOICES = [
@@ -44,8 +41,7 @@ class Lot(models.Model):
     auction_end = models.DateTimeField()
     category = models.CharField(max_length=100, choices=CATEGORY_CHOICES, default='Транспорт')
     is_active = models.BooleanField(default=True)
-    views = models.PositiveIntegerField(default=0, verbose_name='Просмотры')  # Новое поле
-
+    views = models.PositiveIntegerField(default=0, verbose_name='Просмотры')
     condition = models.CharField(
         max_length=20,
         choices=CONDITION_CHOICES,
@@ -68,9 +64,16 @@ class Lot(models.Model):
         blank=True,
         verbose_name='Город'
     )
+    bid_step = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=100.00,
+        validators=[MinValueValidator(1.00)],
+        verbose_name='Минимальный шаг ставки'
+    )
 
     def is_auction_ended(self):
-        return timezone.now() > self.auction_end
+        return timezone.now() >= self.auction_end
 
     def has_bids(self):
         return self.bids.exists()
@@ -78,24 +81,41 @@ class Lot(models.Model):
     def __str__(self):
         return self.title
 
+
 class Bid(models.Model):
     lot = models.ForeignKey(Lot, on_delete=models.CASCADE, related_name='bids')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bids')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_auto = models.BooleanField(default=False)  # Автоматическая ставка
 
     class Meta:
         ordering = ['-amount']
 
     def __str__(self):
-        return f"{self.user.username} - {self.amount} on {self.lot.title}"
+        return f"{self.user.username} - {self.amount} on {self.lot.title} {'(auto)' if self.is_auto else ''}"
+
+
+class AutoBid(models.Model):
+    lot = models.ForeignKey(Lot, on_delete=models.CASCADE, related_name='auto_bids')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='auto_bids')
+    max_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('lot', 'user')  # Один пользователь — одна автоставка на лот
+        ordering = ['-max_amount']
+
+    def __str__(self):
+        return f"AutoBid by {self.user.username} - {self.max_amount} on {self.lot.title}"
+
 
 class Comment(models.Model):
     lot = models.ForeignKey(Lot, on_delete=models.CASCADE, related_name='comments')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         ordering = ['-created_at']
 
