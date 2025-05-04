@@ -9,7 +9,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" href="{% static 'main/favicon.ico' %}">
-
     <title>Аукционы</title>
 </head>
 
@@ -53,15 +52,11 @@
             const updateInterval = 5000;
             let lastData = null;
 
-            // Функция для форматирования времени до окончания в минутах/часах
-            function formatTimeUntil(endTime) {
-                if (!endTime) return '';
-                const now = new Date();
-                const end = new Date(endTime);
-                const delta = (end - now) / 1000; // Разница в секундах
-                if (delta <= 0) return '';
-                const hours = Math.floor(delta / 3600);
-                const minutes = Math.floor((delta % 3600) / 60);
+            // Функция для форматирования времени до окончания
+            function formatTimeUntil(seconds) {
+                if (seconds <= 0) return '';
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
                 if (hours >= 1) return `${hours} ч`;
                 return `${minutes} мин`;
             }
@@ -76,11 +71,13 @@
                         lastData = data;
 
                         if (pageId === 'lot_detail') {
+                            // Обновление текущей цены
                             const currentPriceEl = document.getElementById('current-price');
                             if (currentPriceEl) {
                                 currentPriceEl.textContent = data.current_price ? data.current_price : 'Нет ставок';
                             }
 
+                            // Обновление списка участников
                             const biddersListEl = document.getElementById('bidders-list');
                             if (biddersListEl) {
                                 biddersListEl.innerHTML = '';
@@ -97,26 +94,122 @@
                                 }
                             }
 
+                            // Обновление времени до окончания
+                            const timeUntilEl = document.getElementById('time-until');
+                            if (timeUntilEl) {
+                                if (data.is_auction_ended) {
+                                    timeUntilEl.remove();
+                                    if (!document.getElementById('auction-ended-message')) {
+                                        const message = document.createElement('p');
+                                        message.id = 'auction-ended-message';
+                                        message.textContent = 'Аукцион завершен.';
+                                        document.querySelector('.col-md-6')?.appendChild(message);
+                                    }
+                                } else {
+                                    timeUntilEl.textContent = `Время до окончания: ${formatTimeUntil(data.time_until)}`;
+                                }
+                            }
+
+                            // Обновление комментариев
                             const commentsListEl = document.getElementById('comments-list');
                             if (commentsListEl) {
                                 commentsListEl.innerHTML = '';
                                 if (data.comments.length > 0) {
                                     data.comments.forEach(comment => {
                                         const date = new Date(comment.created_at).toLocaleString();
-                                        commentsListEl.innerHTML += `
-                                    <div class="card mt-2">
-                                        <div class="card-body">
-                                            <p>${comment.content}</p>
-                                            <p>Автор: ${comment.username} | ${date}</p>
-                                        </div>
-                                    </div>
-                                `;
+                                        let commentHtml = `
+                                            <div class="card mt-2" id="comment-${comment.id}">
+                                                <div class="card-body">
+                                                    <p>${comment.content}</p>
+                                                    <p>Автор: ${comment.username} | ${date}</p>
+                                        `;
+                                        if (comment.can_edit) {
+                                            commentHtml += `
+                                                <button class="btn btn-sm btn-warning edit-comment-btn" data-comment-id="${comment.id}">Редактировать</button>
+                                                <form method="post" style="display:inline;" onsubmit="return confirm('Удалить комментарий?');" class="delete-comment-form">
+                                                    <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+                                                    <input type="hidden" name="delete_comment" value="true">
+                                                    <input type="hidden" name="comment_id" value="${comment.id}">
+                                                    <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
+                                                </form>
+                                                <form method="post" class="edit-comment-form" style="display:none;" data-comment-id="${comment.id}">
+                                                    <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+                                                    <textarea name="content" rows="3" class="form-control">${comment.content}</textarea>
+                                                    <input type="hidden" name="edit_comment" value="true">
+                                                    <input type="hidden" name="comment_id" value="${comment.id}">
+                                                    <button type="submit" class="btn btn-sm btn-success mt-2">Сохранить</button>
+                                                    <button type="button" class="btn btn-sm btn-secondary mt-2 cancel-edit-btn">Отмена</button>
+                                                </form>
+                                            `;
+                                        }
+                                        if (!data.is_auction_ended) {
+                                            commentHtml += `
+                                                <button class="btn btn-sm btn-primary reply-comment-btn" data-comment-id="${comment.id}">Ответить</button>
+                                                <form method="post" class="reply-comment-form" style="display:none;" data-comment-id="${comment.id}">
+                                                    <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+                                                    <textarea name="content" rows="3" class="form-control" placeholder="Ваш ответ"></textarea>
+                                                    <input type="hidden" name="comment" value="true">
+                                                    <input type="hidden" name="parent" value="${comment.id}">
+                                                    <button type="submit" class="btn btn-sm btn-primary mt-2">Отправить ответ</button>
+                                                    <button type="button" class="btn btn-sm btn-secondary mt-2 cancel-reply-btn">Отмена</button>
+                                                </form>
+                                            `;
+                                        }
+                                        if (comment.replies_count > 0) {
+                                            commentHtml += `
+                                                <button class="btn btn-sm btn-info show-replies-btn" data-comment-id="${comment.id}" data-replies-count="${comment.replies_count}">
+                                                    Показать ответы (${comment.replies_count})
+                                                </button>
+                                                <div class="replies-container" id="replies-${comment.id}" style="display:none;">
+                                            `;
+                                            comment.replies.forEach(reply => {
+                                                const replyDate = new Date(reply.created_at).toLocaleString();
+                                                commentHtml += `
+                                                    <div class="card mt-2 ms-4" id="comment-${reply.id}">
+                                                        <div class="card-body">
+                                                            <p>${reply.content}</p>
+                                                            <p>Автор: ${reply.username} | ${replyDate}</p>
+                                                `;
+                                                if (reply.can_edit) {
+                                                    commentHtml += `
+                                                        <button class="btn btn-sm btn-warning edit-comment-btn" data-comment-id="${reply.id}">Редактировать</button>
+                                                        <form method="post" style="display:inline;" onsubmit="return confirm('Удалить ответ?');" class="delete-comment-form">
+                                                            <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+                                                            <input type="hidden" name="delete_comment" value="true">
+                                                            <input type="hidden" name="comment_id" value="${reply.id}">
+                                                            <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
+                                                        </form>
+                                                        <form method="post" class="edit-comment-form" style="display:none;" data-comment-id="${reply.id}">
+                                                            <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+                                                            <textarea name="content" rows="3" class="form-control">${reply.content}</textarea>
+                                                            <input type="hidden" name="edit_comment" value="true">
+                                                            <input type="hidden" name="comment_id" value="${reply.id}">
+                                                            <button type="submit" class="btn btn-sm btn-success mt-2">Сохранить</button>
+                                                            <button type="button" class="btn btn-sm btn-secondary mt-2 cancel-edit-btn">Отмена</button>
+                                                        </form>
+                                                    `;
+                                                }
+                                                commentHtml += `
+                                                        </div>
+                                                    </div>
+                                                `;
+                                            });
+                                            commentHtml += `
+                                                </div>
+                                            `;
+                                        }
+                                        commentHtml += `
+                                                </div>
+                                            </div>
+                                        `;
+                                        commentsListEl.innerHTML += commentHtml;
                                     });
                                 } else {
                                     commentsListEl.innerHTML = '<p>Комментариев пока нет.</p>';
                                 }
                             }
 
+                            // Удаление форм при завершении аукциона
                             if (data.is_auction_ended) {
                                 document.getElementById('bid-form')?.remove();
                                 document.getElementById('comment-form')?.remove();
@@ -127,201 +220,92 @@
                                     document.querySelector('.col-md-6')?.appendChild(message);
                                 }
                             }
-                        } else if (pageId === 'home') {
-                            const latestLotsEl = document.getElementById('latest-lots');
-                            const otherLotsEl = document.getElementById('other-lots');
-                            if (latestLotsEl) {
-                                latestLotsEl.innerHTML = '';
-                                if (data.latest_lots.length > 0) {
-                                    data.latest_lots.forEach(lot => {
-                                        latestLotsEl.innerHTML += `
-                                    <div class="col-md-4">
-                                        <div class="card">
-                                            ${lot.main_image ? `<img src="${lot.main_image}" class="card-img-top" alt="${lot.title}">` : ''}
-                                            <div class="card-body">
-                                                <h5 class="card-title">${lot.title}</h5>
-                                                ${lot.is_auction_ended ? '' : `<p>Время до окончания: ${formatTimeUntil(lot.time_until)}</p>`}
-                                                <p>Начальная цена: ${lot.initial_price}</p>
-                                                <p>Текущая цена: ${lot.current_price || 'Нет ставок'}</p>
-                                                <p>Статус: ${lot.is_auction_ended ? 'Завершен' : 'Активен'}</p>
-                                                <p>Последняя ставка: ${lot.last_bidder || 'Нет участников'}</p>
-                                                <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                `;
-                                    });
-                                } else {
-                                    latestLotsEl.innerHTML = '<p>Нет активных лотов.</p>';
-                                }
-                            }
-                            if (otherLotsEl) {
-                                otherLotsEl.innerHTML = '';
-                                if (data.other_lots.length > 0) {
-                                    data.other_lots.forEach(lot => {
-                                        otherLotsEl.innerHTML += `  <!-- Исправлено: добавляем в otherLotsEl -->
-                                    <div class="col-md-4">
-                                        <div class="card">
-                                            ${lot.main_image ? `<img src="${lot.main_image}" class="card-img-top" alt="${lot.title}">` : ''}
-                                            <div class="card-body">
-                                                <h5 class="card-title">${lot.title}</h5>
-                                                ${lot.is_auction_ended ? '' : `<p>Время до окончания: ${formatTimeUntil(lot.time_until)}</p>`}
-                                                <p>Начальная цена: ${lot.initial_price}</p>
-                                                <p>Текущая цена: ${lot.current_price || 'Нет ставок'}</p>
-                                                <p>Статус: ${lot.is_auction_ended ? 'Завершен' : 'Активен'}</p>
-                                                <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                `;
-                                    });
-                                } else {
-                                    otherLotsEl.innerHTML = '<p>Нет других лотов.</p>';
-                                }
-                            }
-                        } else if (pageId === 'user_lots') {
-                            const activeLotsEl = document.getElementById('active-lots');
-                            const finishedLotsEl = document.getElementById('finished-lots');
-                            if (activeLotsEl) {
-                                activeLotsEl.innerHTML = '';
-                                if (data.active_lots.length > 0) {
-                                    data.active_lots.forEach(lot => {
-                                        // Проверяем, есть ли ставки на лот (нужно передать это в JSON)
-                                        const hasBids = data.active_lots_has_bids && data.active_lots_has_bids[lot.id] ? true : false;
-                                        activeLotsEl.innerHTML += `
-                                        <div class="card">
-                                            <div class="card-body">
-                                                <h5>${lot.title}</h5>
-                                                <p>Текущая цена: ${lot.current_price || 'Нет ставок'}</p>
-                                                <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
-                                                ${!hasBids ? `
-                                                <a href="/edit_lot/${lot.id}/" class="btn btn-warning">Редактировать</a>
-                                                <form method="post" style="display:inline;" onsubmit="return confirm('Вы уверены, что хотите отменить лот?');">
-                                                    <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
-                                                    <input type="hidden" name="cancel_lot" value="true">
-                                                    <input type="hidden" name="lot_id" value="${lot.id}">
-                                                    <button type="submit" class="btn btn-danger">Отменить лот</button>
-                                                </form>
-                                                ` : ''}
-                                            </div>
-                                        </div>
-                                    `;
-                                    });
-                                } else {
-                                    activeLotsEl.innerHTML = '<p>Нет активных лотов.</p>';
-                                }
-                            }
-                            if (finishedLotsEl) {
-                                finishedLotsEl.innerHTML = '';
-                                if (data.finished_lots.length > 0) {
-                                    data.finished_lots.forEach(lot => {
-                                        let biddersHtml = '<ul>';
-                                        lot.unique_bidders.forEach(bidder => {
-                                            biddersHtml += `<li>${bidder.username} (${bidder.email}) - ${bidder.amount}</li>`;
-                                        });
-                                        biddersHtml += lot.unique_bidders.length ? '</ul>' : '<li>Ставок не было</li></ul>';
-                                        finishedLotsEl.innerHTML += `
-                                        <div class="card">
-                                            <div class="card-body">
-                                                <h5>${lot.title}</h5>
-                                                <p>Финальная цена: ${lot.current_price || 'Нет ставок'}</p>
-                                                <h6>Топ-3 участников:</h6>
-                                                ${biddersHtml}
-                                                <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
-                                            </div>
-                                        </div>
-                                    `;
-                                    });
-                                } else {
-                                    finishedLotsEl.innerHTML = '<p>Нет завершенных лотов.</p>';
-                                }
-                            }
-                        } else if (pageId === 'participation_history') {
-                            const activeLotsEl = document.getElementById('active-lots');
-                            const participatedLotsEl = document.getElementById('participated-lots');
-                            if (activeLotsEl) {
-                                activeLotsEl.innerHTML = '';
-                                if (data.active_lots.length > 0) {
-                                    data.active_lots.forEach(lot => {
-                                        activeLotsEl.innerHTML += `
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <h5>${lot.title}</h5>
-                                            <p>Текущая цена: ${lot.current_price || 'Нет ставок'}</p>
-                                            <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
-                                        </div>
-                                    </div>
-                                `;
-                                    });
-                                } else {
-                                    activeLotsEl.innerHTML = '<p>Нет активных аукционов.</p>';
-                                }
-                            }
-                            if (participatedLotsEl) {
-                                participatedLotsEl.innerHTML = '';
-                                if (data.participated_lots.length > 0) {
-                                    data.participated_lots.forEach(lot => {
-                                        participatedLotsEl.innerHTML += `
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <h5>${lot.title}</h5>
-                                            <p>Статус: ${lot.is_active ? 'Активен' : 'Завершен'}</p>
-                                            <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
-                                        </div>
-                                    </div>
-                                `;
-                                    });
-                                } else {
-                                    participatedLotsEl.innerHTML = '<p>Вы не участвовали в аукционах.</p>';
-                                }
-                            }
-                        } else if (pageId === 'win_history') {
-                            const wonLotsEl = document.getElementById('won-lots');
-                            const topThreeLotsEl = document.getElementById('top-three-lots');
-                            if (wonLotsEl) {
-                                wonLotsEl.innerHTML = '';
-                                if (data.won_lots.length > 0) {
-                                    data.won_lots.forEach(lot => {
-                                        wonLotsEl.innerHTML += `
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <h5>${lot.title}</h5>
-                                            <p>Финальная цена: ${lot.current_price || 'Нет ставок'}</p>
-                                            <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
-                                        </div>
-                                    </div>
-                                `;
-                                    });
-                                } else {
-                                    wonLotsEl.innerHTML = '<p>Вы не выиграли лоты.</p>';
-                                }
-                            }
-                            if (topThreeLotsEl) {
-                                topThreeLotsEl.innerHTML = '';
-                                if (data.top_three_lots.length > 0) {
-                                    data.top_three_lots.forEach(lot => {
-                                        topThreeLotsEl.innerHTML += `
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <h5>${lot.title}</h5>
-                                            <p>Финальная цена: ${lot.current_price || 'Нет ставок'}</p>
-                                            <a href="/lot/${lot.id}/" class="btn btn-primary">Подробнее</a>
-                                        </div>
-                                    </div>
-                                `;
-                                    });
-                                } else {
-                                    topThreeLotsEl.innerHTML = '<p>Вы не входили в топ-3 по ставкам.</p>';
-                                }
-                            }
+
+                            bindCommentEvents();
                         }
                     })
                     .catch(error => console.error('Error updating page data:', error));
             }
 
+            function bindCommentEvents() {
+                document.querySelectorAll('.edit-comment-btn').forEach(button => {
+                    button.removeEventListener('click', handleEditClick);
+                    button.addEventListener('click', handleEditClick);
+                });
+
+                document.querySelectorAll('.cancel-edit-btn').forEach(button => {
+                    button.removeEventListener('click', handleCancelEdit);
+                    button.addEventListener('click', handleCancelEdit);
+                });
+
+                document.querySelectorAll('.reply-comment-btn').forEach(button => {
+                    button.removeEventListener('click', handleReplyClick);
+                    button.addEventListener('click', handleReplyClick);
+                });
+
+                document.querySelectorAll('.cancel-reply-btn').forEach(button => {
+                    button.removeEventListener('click', handleCancelReply);
+                    button.addEventListener('click', handleCancelReply);
+                });
+
+                document.querySelectorAll('.show-replies-btn').forEach(button => {
+                    button.removeEventListener('click', handleShowReplies);
+                    button.addEventListener('click', handleShowReplies);
+                });
+            }
+
+            function handleEditClick() {
+                const commentId = this.dataset.commentId;
+                const commentCard = document.getElementById(`comment-${commentId}`);
+                const editForm = commentCard.querySelector('.edit-comment-form');
+                const replyForm = commentCard.querySelector('.reply-comment-form');
+                if (editForm) {
+                    editForm.style.display = editForm.style.display === 'none' ? 'block' : 'none';
+                    if (replyForm) {
+                        replyForm.style.display = 'none';
+                    }
+                }
+            }
+
+            function handleCancelEdit() {
+                const form = this.closest('.edit-comment-form');
+                form.style.display = 'none';
+            }
+
+            function handleReplyClick() {
+                const commentId = this.dataset.commentId;
+                const commentCard = document.getElementById(`comment-${commentId}`);
+                const replyForm = commentCard.querySelector('.reply-comment-form');
+                const editForm = commentCard.querySelector('.edit-comment-form');
+                if (replyForm) {
+                    replyForm.style.display = replyForm.style.display === 'none' ? 'block' : 'none';
+                    if (editForm) {
+                        editForm.style.display = 'none';
+                    }
+                }
+            }
+
+            function handleCancelReply() {
+                const form = this.closest('.reply-comment-form');
+                form.style.display = 'none';
+            }
+
+            function handleShowReplies() {
+                const commentId = this.dataset.commentId;
+                const repliesContainer = document.getElementById(`replies-${commentId}`);
+                if (repliesContainer) {
+                    const isHidden = repliesContainer.style.display === 'none';
+                    repliesContainer.style.display = isHidden ? 'block' : 'none';
+                    const repliesCount = this.dataset.repliesCount || this.textContent.match(/\d+/)?.[0] || 0;
+                    this.textContent = isHidden ? `Скрыть ответы` : `Показать ответы (${repliesCount})`;
+                    this.dataset.repliesCount = repliesCount;
+                }
+            }
+
             if (pageId) {
                 setInterval(updatePageData, updateInterval);
                 updatePageData();
+                bindCommentEvents();
             }
         });
     </script>

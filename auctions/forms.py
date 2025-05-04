@@ -88,9 +88,21 @@ class AutoBidForm(forms.ModelForm):
 
 
 class CommentForm(forms.ModelForm):
+    parent = forms.IntegerField(required=False, widget=forms.HiddenInput())
+
     class Meta:
         model = Comment
-        fields = ['content']
+        fields = ['content', 'parent']
         widgets = {
             'content': forms.Textarea(attrs={'rows': 3}),
         }
+
+    def clean_parent(self):
+        parent_id = self.cleaned_data.get('parent')
+        if parent_id:
+            try:
+                parent = Comment.objects.get(id=parent_id)
+                return parent
+            except Comment.DoesNotExist:
+                raise forms.ValidationError("Указанный родительский комментарий не существует.")
+        return None

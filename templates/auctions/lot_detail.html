@@ -25,7 +25,7 @@
     </div>
     <div class="col-md-6">
         {% if not lot.is_auction_ended %}
-        <p>Время до окончания: {{ lot.auction_end|timeuntil }}</p>
+        <p id="time-until">Время до окончания: {{ lot.auction_end|timeuntil }}</p>
         {% endif %}
         <p>Автор: {{ lot.created_by.username }}</p>
         <p>Начальная цена: {{ lot.initial_price }}</p>
@@ -121,11 +121,78 @@
 <p><a href="{% url 'login' %}">Авторизуйтесь</a>, чтобы оставить комментарий.</p>
 {% endif %}
 <div id="comments-list">
-    {% for comment in lot.comments.all %}
-    <div class="card mt-2">
+    {% for comment in root_comments %}
+    <div class="card mt-2" id="comment-{{ comment.id }}">
         <div class="card-body">
             <p>{{ comment.content }}</p>
             <p>Автор: {{ comment.user.username }} | {{ comment.created_at }}</p>
+            {% if user.is_authenticated and comment.user == user and comment.can_edit_or_delete %}
+            <button class="btn btn-sm btn-warning edit-comment-btn"
+                data-comment-id="{{ comment.id }}">Редактировать</button>
+            <form method="post" style="display:inline;" onsubmit="return confirm('Удалить комментарий?');"
+                class="delete-comment-form">
+                {% csrf_token %}
+                <input type="hidden" name="delete_comment" value="true">
+                <input type="hidden" name="comment_id" value="{{ comment.id }}">
+                <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
+            </form>
+            <form method="post" class="edit-comment-form" style="display:none;" data-comment-id="{{ comment.id }}">
+                {% csrf_token %}
+                <textarea name="content" rows="3" class="form-control">{{ comment.content }}</textarea>
+                <input type="hidden" name="edit_comment" value="true">
+                <input type="hidden" name="comment_id" value="{{ comment.id }}">
+                <button type="submit" class="btn btn-sm btn-success mt-2">Сохранить</button>
+                <button type="button" class="btn btn-sm btn-secondary mt-2 cancel-edit-btn">Отмена</button>
+            </form>
+            {% endif %}
+            {% if user.is_authenticated and not lot.is_auction_ended %}
+            <button class="btn btn-sm btn-primary reply-comment-btn"
+                data-comment-id="{{ comment.id }}">Ответить</button>
+            <form method="post" class="reply-comment-form" style="display:none;" data-comment-id="{{ comment.id }}">
+                {% csrf_token %}
+                <textarea name="content" rows="3" class="form-control" placeholder="Ваш ответ"></textarea>
+                <input type="hidden" name="comment" value="true">
+                <input type="hidden" name="parent" value="{{ comment.id }}">
+                <button type="submit" class="btn btn-sm btn-primary mt-2">Отправить ответ</button>
+                <button type="button" class="btn btn-sm btn-secondary mt-2 cancel-reply-btn">Отмена</button>
+            </form>
+            {% endif %}
+            {% if comment.replies.count %}
+            <button class="btn btn-sm btn-info show-replies-btn" data-comment-id="{{ comment.id }}"
+                data-replies-count="{{ comment.replies.count }}">
+                Показать ответы ({{ comment.replies.count }})
+            </button>
+            <div class="replies-container" id="replies-{{ comment.id }}" style="display:none;">
+                {% for reply in comment.replies.all %}
+                <div class="card mt-2 ms-4" id="comment-{{ reply.id }}">
+                    <div class="card-body">
+                        <p>{{ reply.content }}</p>
+                        <p>Автор: {{ reply.user.username }} | {{ reply.created_at }}</p>
+                        {% if user.is_authenticated and reply.user == user and reply.can_edit_or_delete %}
+                        <button class="btn btn-sm btn-warning edit-comment-btn"
+                            data-comment-id="{{ reply.id }}">Редактировать</button>
+                        <form method="post" style="display:inline;" onsubmit="return confirm('Удалить ответ?');"
+                            class="delete-comment-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="delete_comment" value="true">
+                            <input type="hidden" name="comment_id" value="{{ reply.id }}">
+                            <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
+                        </form>
+                        <form method="post" class="edit-comment-form" style="display:none;"
+                            data-comment-id="{{ reply.id }}">
+                            {% csrf_token %}
+                            <textarea name="content" rows="3" class="form-control">{{ reply.content }}</textarea>
+                            <input type="hidden" name="edit_comment" value="true">
+                            <input type="hidden" name="comment_id" value="{{ reply.id }}">
+                            <button type="submit" class="btn btn-sm btn-success mt-2">Сохранить</button>
+                            <button type="button" class="btn btn-sm btn-secondary mt-2 cancel-edit-btn">Отмена</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
         </div>
     </div>
     {% empty %}

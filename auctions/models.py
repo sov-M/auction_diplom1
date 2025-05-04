@@ -3,6 +3,8 @@ from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from users.models import User
 from django.core.validators import MinValueValidator
+from datetime import timedelta
+
 
 class Lot(models.Model):
     CATEGORY_CHOICES = [
@@ -115,9 +117,14 @@ class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='replies')
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ['-created_at']  # Сначала старые комментарии, чтобы ответы шли после родительских
 
     def __str__(self):
         return f"Comment by {self.user.username} on {self.lot.title}"
+
+    def can_edit_or_delete(self):
+        """Проверяет, можно ли редактировать или удалить комментарий (в течение 5 минут)."""
+        return timezone.now() <= self.created_at + timedelta(minutes=5)

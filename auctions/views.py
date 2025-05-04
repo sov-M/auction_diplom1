@@ -204,7 +204,7 @@ class HomeView(View):
 
 class LotDetailView(View):
     def get(self, request, pk):
-        lot = get_object_or_404(Lot.objects.prefetch_related('bids__user', 'comments__user'), pk=pk)
+        lot = get_object_or_404(Lot.objects.prefetch_related('bids__user', 'comments__user', 'comments__replies'), pk=pk)
         is_author = request.user.is_authenticated and lot.created_by == request.user
         bid_form = BidForm(lot=lot) if request.user.is_authenticated and not is_author else None
         auto_bid_form = AutoBidForm(lot=lot, user=request.user) if request.user.is_authenticated and not is_author else None
@@ -212,8 +212,9 @@ class LotDetailView(View):
         unique_bidders = lot.bids.values('user__username').annotate(max_amount=Max('amount')).order_by('-max_amount')[:3]
         user_auto_bid = AutoBid.objects.filter(lot=lot, user=request.user).first() if request.user.is_authenticated else None
         current_bid = lot.bids.filter(user=request.user).order_by('-amount').first() if request.user.is_authenticated else None
+        root_comments = lot.comments.filter(parent__isnull=True)
 
-        # Проверка продления лота на 30 минут, если аукцион завершён и нет ставок
+        # Проверка продления лота
         if lot.is_active and lot.auction_end <= timezone.now() and not lot.has_bids():
             lot.auction_end = timezone.now() + timedelta(minutes=30)
             lot.save()
@@ -237,11 +238,24 @@ class LotDetailView(View):
             ]
             comments = [
                 {
+                    'id': comment.id,
                     'content': comment.content,
                     'username': comment.user.username,
-                    'created_at': comment.created_at.isoformat()
+                    'created_at': comment.created_at.isoformat(),
+                    'can_edit': comment.can_edit_or_delete() and request.user == comment.user,
+                    'replies_count': comment.replies.count(),
+                    'replies': [
+                        {
+                            'id': reply.id,
+                            'content': reply.content,
+                            'username': reply.user.username,
+                            'created_at': reply.created_at.isoformat(),
+                            'can_edit': reply.can_edit_or_delete() and request.user == reply.user,
+                        }
+                        for reply in comment.replies.all()
+                    ]
                 }
-                for comment in lot.comments.all()
+                for comment in root_comments
             ]
             return JsonResponse({
                 'bidders': bidders,
@@ -249,6 +263,7 @@ class LotDetailView(View):
                 'current_price': float(lot.current_price) if lot.current_price else None,
                 'is_auction_ended': lot.is_auction_ended(),
                 'auction_end': lot.auction_end.isoformat(),
+                'time_until': (lot.auction_end - timezone.now()).total_seconds() if lot.is_active else 0,
             })
 
         return render(request, 'auctions/lot_detail.html', {
@@ -261,6 +276,7 @@ class LotDetailView(View):
             'unique_bidders': unique_bidders,
             'user_auto_bid': user_auto_bid,
             'current_bid': current_bid,
+            'root_comments': root_comments,
         })
 
     def post(self, request, pk):
@@ -285,18 +301,13 @@ class LotDetailView(View):
                     bid.save()
                     lot.current_price = bid.amount
                     lot.save()
-
-                    # Проверка автоматического продления (только для ставок)
                     time_to_end = lot.auction_end - timezone.now()
                     last_bid = lot.bids.order_by('-created_at').first()
                     if last_bid and time_to_end <= timedelta(minutes=5):
                         lot.auction_end = last_bid.created_at + timedelta(minutes=5)
                         lot.save()
                         print(f"Auction extended to: {lot.auction_end}")
-
-                    # Обработка автоматических ставок
                     process_auto_bids(lot)
-
                     messages.success(request, "Ставка успешно сделана.")
             else:
                 messages.error(request, "Ошибка в ставке: " + str(bid_form.errors))
@@ -305,13 +316,11 @@ class LotDetailView(View):
             auto_bid_form = AutoBidForm(request.POST, lot=lot, user=request.user)
             if auto_bid_form.is_valid():
                 with transaction.atomic():
-                    AutoBid.objects.filter(lot=lot, user=request.user).delete()  # Удаляем старую автоставку
+                    AutoBid.objects.filter(lot=lot, user=request.user).delete()
                     auto_bid = auto_bid_form.save(commit=False)
                     auto_bid.lot = lot
                     auto_bid.user = request.user
                     auto_bid.save()
-
-                    # Делаем начальную автоматическую ставку только на bid_step выше текущей
                     current_price = lot.current_price or lot.initial_price
                     current_leader = lot.bids.order_by('-amount').first()
                     if not current_leader or current_leader.user != request.user:
@@ -326,18 +335,13 @@ class LotDetailView(View):
                             lot.current_price = new_amount
                             lot.save()
                             print(f"Initial auto bid placed: {request.user.username} - {new_amount}")
-
-                            # Проверка автоматического продления (только для ставок)
                             time_to_end = lot.auction_end - timezone.now()
                             last_bid = lot.bids.order_by('-created_at').first()
                             if last_bid and time_to_end <= timedelta(minutes=5):
                                 lot.auction_end = last_bid.created_at + timedelta(minutes=5)
                                 lot.save()
                                 print(f"Auction extended to: {lot.auction_end}")
-
-                    # Обработка конкуренции автоставок
                     process_auto_bids(lot)
-
                     messages.success(request, "Автоматическая ставка установлена.")
             else:
                 messages.error(request, "Ошибка в автоматической ставке: " + str(auto_bid_form.errors))
@@ -346,19 +350,50 @@ class LotDetailView(View):
             with transaction.atomic():
                 AutoBid.objects.filter(lot=lot, user=request.user).delete()
                 messages.success(request, "Автоматическая ставка удалена.")
-                # Обработка автоставок других пользователей после удаления
                 process_auto_bids(lot)
 
         elif 'comment' in request.POST:
             comment_form = CommentForm(request.POST)
             if comment_form.is_valid():
-                comment = comment_form.save(commit=False)
-                comment.lot = lot
-                comment.user = request.user
-                comment.save()
-                messages.success(request, "Комментарий добавлен.")
+                last_reply = Comment.objects.filter(
+                    user=request.user,
+                    lot=lot,
+                    parent__isnull=False
+                ).order_by('-created_at').first()
+                if last_reply and (timezone.now() - last_reply.created_at) < timedelta(minutes=1):
+                    messages.error(request, "Вы можете оставлять ответы не чаще одного раза в минуту.")
+                else:
+                    comment = comment_form.save(commit=False)
+                    comment.lot = lot
+                    comment.user = request.user
+                    comment.save()
+                    messages.success(request, "Комментарий добавлен.")
             else:
                 messages.error(request, "Ошибка в комментарии: " + str(comment_form.errors))
+
+        elif 'edit_comment' in request.POST:
+            comment_id = request.POST.get('comment_id')
+            comment = get_object_or_404(Comment, id=comment_id, user=request.user, lot=lot)
+            if not comment.can_edit_or_delete():
+                messages.error(request, "Время для редактирования комментария истекло.")
+            else:
+                content = request.POST.get('content')
+                if content:
+                    comment.content = content
+                    comment.save()
+                    messages.success(request, "Комментарий обновлён.")
+                else:
+                    messages.error(request, "Комментарий не может быть пустым.")
+                    print(f"Edit comment failed: Empty content for comment_id={comment_id}")
+
+        elif 'delete_comment' in request.POST:
+            comment_id = request.POST.get('comment_id')
+            comment = get_object_or_404(Comment, id=comment_id, user=request.user, lot=lot)
+            if not comment.can_edit_or_delete():
+                messages.error(request, "Время для удаления комментария истекло.")
+            else:
+                comment.delete()
+                messages.success(request, "Комментарий удалён.")
 
         elif 'cancel_lot' in request.POST and is_author:
             if lot.has_bids():
@@ -369,6 +404,7 @@ class LotDetailView(View):
                 return redirect('home')
 
         return redirect('lot_detail', pk=pk)
+
 
 
 class CreateLotView(LoginRequiredMixin, View):
