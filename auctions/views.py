@@ -1,4 +1,3 @@
-#auctions/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -10,9 +9,7 @@ from django.contrib import messages
 from django.db.models import Q, Max, Count
 from datetime import timedelta
 from django.http import JsonResponse
-import json
 from django.db import transaction
-from django.db.models import Sum
 
 
 def process_auto_bids(lot):
@@ -22,12 +19,10 @@ def process_auto_bids(lot):
         current_price = lot.current_price or lot.initial_price
         bid_made = False
 
-        # Если есть текущая ставка, определяем текущего лидера
         current_leader = lot.bids.order_by('-amount').first()
         current_leader_id = current_leader.user.id if current_leader else None
 
         for auto_bid in auto_bids:
-            # Пропускаем автоставку текущего лидера, чтобы не перебивать самого себя
             if current_leader_id == auto_bid.user.id:
                 continue
             if auto_bid.max_amount > current_price:
@@ -46,7 +41,6 @@ def process_auto_bids(lot):
                         bid_made = True
                         print(f"Auto bid placed: {auto_bid.user.username} - {new_amount}")
 
-                        # Проверка автоматического продления (только для ставок)
                         time_to_end = lot.auction_end - timezone.now()
                         last_bid = lot.bids.order_by('-created_at').first()
                         if last_bid and time_to_end <= timedelta(minutes=5):
@@ -203,6 +197,7 @@ class HomeView(View):
             'filters_applied': filters_applied,
         })
 
+
 class LotDetailView(View):
     def get(self, request, pk):
         lot = get_object_or_404(Lot.objects.prefetch_related('bids__user', 'comments__user', 'comments__replies'), pk=pk)
@@ -215,7 +210,6 @@ class LotDetailView(View):
         current_bid = lot.bids.filter(user=request.user).order_by('-amount').first() if request.user.is_authenticated else None
         root_comments = lot.comments.filter(parent__isnull=True)
 
-        # Проверка продления лота
         if lot.is_active and lot.auction_end <= timezone.now() and not lot.has_bids():
             lot.auction_end = timezone.now() + timedelta(minutes=10)
             lot.save()
@@ -407,7 +401,6 @@ class LotDetailView(View):
         return redirect('lot_detail', pk=pk)
 
 
-
 class CreateLotView(LoginRequiredMixin, View):
     def get(self, request):
         form = LotForm()
@@ -453,195 +446,3 @@ class EditLotView(LoginRequiredMixin, View):
             messages.success(request, "Лот успешно отредактирован.")
             return redirect('lot_detail', pk=lot.pk)
         return render(request, 'auctions/edit_lot.html', {'form': form, 'lot': lot})
-
-
-class ProfileView(LoginRequiredMixin, View):
-    def get(self, request):
-        user = request.user
-        
-        # Статистика
-        total_lots = Lot.objects.filter(created_by=user).count()
-        active_lots = Lot.objects.filter(created_by=user, is_active=True, auction_end__gt=timezone.now()).count()
-        finished_lots = Lot.objects.filter(created_by=user, auction_end__lte=timezone.now()).count()
-        total_bids = Bid.objects.filter(user=user).count()
-        won_lots = Lot.objects.filter(
-            bids__user=user,
-            auction_end__lt=timezone.now(),
-            current_price__in=Bid.objects.filter(user=user).values('amount')
-        ).distinct().count()
-        total_spent = Bid.objects.filter(
-            user=user,
-            lot__auction_end__lt=timezone.now(),
-            amount__in=Lot.objects.filter(bids__user=user).values('current_price')
-        ).aggregate(total=Sum('amount'))['total'] or 0
-        total_comments = Comment.objects.filter(user=user).count()
-        participated_lots = Lot.objects.filter(bids__user=user).distinct().count()
-
-        return render(request, 'auctions/profile.html', {
-            'user': user,
-            'stats': {
-                'total_lots': total_lots,
-                'active_lots': active_lots,
-                'finished_lots': finished_lots,
-                'total_bids': total_bids,
-                'won_lots': won_lots,
-                'total_spent': total_spent,
-                'total_comments': total_comments,
-                'participated_lots': participated_lots,
-            }
-        })
-
-    def post(self, request):
-        user = request.user
-        if 'update_bio' in request.POST:
-            bio = request.POST.get('bio')
-            user.bio = bio
-            user.save()
-            messages.success(request, "Профиль обновлен.")
-        return redirect('profile')
-
-class ParticipationHistoryView(LoginRequiredMixin, View):
-    def get(self, request):
-        user = request.user
-        participated_lots = Lot.objects.filter(bids__user=user).distinct()
-        active_lots = participated_lots.filter(auction_end__gt=timezone.now())
-
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({
-                'active_lots': [
-                    {
-                        'id': lot.id,
-                        'title': lot.title,
-                        'current_price': float(lot.current_price) if lot.current_price else None,
-                    } for lot in active_lots
-                ],
-                'participated_lots': [
-                    {
-                        'id': lot.id,
-                        'title': lot.title,
-                        'is_active': lot.is_active,
-                    } for lot in participated_lots
-                ]
-            })
-
-        return render(request, 'auctions/participation_history.html', {
-            'active_lots': active_lots,
-            'participated_lots': participated_lots,
-        })
-
-class WinHistoryView(LoginRequiredMixin, View):
-    def get(self, request):
-        user = request.user
-        won_lots = Lot.objects.filter(
-            bids__user=user,
-            auction_end__lt=timezone.now(),
-            current_price__in=Lot.objects.filter(bids__user=user).values('bids__amount')
-        ).distinct()
-        top_three_lots = Lot.objects.filter(bids__user=user).filter(bids__in=Bid.objects.order_by('-amount')[:3]).distinct()
-
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({
-                'won_lots': [
-                    {
-                        'id': lot.id,
-                        'title': lot.title,
-                        'current_price': float(lot.current_price) if lot.current_price else None,
-                    } for lot in won_lots
-                ],
-                'top_three_lots': [
-                    {
-                        'id': lot.id,
-                        'title': lot.title,
-                        'current_price': float(lot.current_price) if lot.current_price else None,
-                    } for lot in top_three_lots
-                ]
-            })
-
-        return render(request, 'auctions/win_history.html', {
-            'won_lots': won_lots,
-            'top_three_lots': top_three_lots,
-        })
-
-class UserLotsView(LoginRequiredMixin, View):
-    def get(self, request):
-        active_lots = Lot.objects.filter(created_by=request.user, auction_end__gt=timezone.now()).order_by('-created_at')
-        finished_lots = Lot.objects.filter(created_by=request.user, auction_end__lte=timezone.now()).order_by('-created_at')
-
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            finished_lots_data = []
-            for lot in finished_lots:
-                unique_bidders = lot.bids.values('user__username', 'user__email').annotate(max_amount=Max('amount')).order_by('-max_amount')[:3]
-                finished_lots_data.append({
-                    'title': lot.title,
-                    'id': lot.id,
-                    'current_price': float(lot.current_price) if lot.current_price else None,
-                    'unique_bidders': [
-                        {
-                            'username': bidder['user__username'],
-                            'email': bidder['user__email'],
-                            'amount': float(bidder['max_amount'])
-                        }
-                        for bidder in unique_bidders
-                    ],
-                    'views': lot.views,
-                    'bids_count': lot.bids.count(),
-                    'unique_bidders_count': lot.bids.values('user').distinct().count(),
-                    'comments_count': lot.comments.count(),
-                })
-
-            return JsonResponse({
-                'active_lots': [
-                    {
-                        'title': lot.title,
-                        'id': lot.id,
-                        'current_price': float(lot.current_price) if lot.current_price else None,
-                        'views': lot.views,
-                        'bids_count': lot.bids.count(),
-                        'unique_bidders_count': lot.bids.values('user').distinct().count(),
-                        'comments_count': lot.comments.count(),
-                    } for lot in active_lots
-                ],
-                'finished_lots': finished_lots_data
-            })
-
-        active_lots_with_stats = []
-        for lot in active_lots:
-            active_lots_with_stats.append({
-                'lot': lot,
-                'stats': {
-                    'views': lot.views,
-                    'bids_count': lot.bids.count(),
-                    'unique_bidders_count': lot.bids.values('user').distinct().count(),
-                    'comments_count': lot.comments.count(),
-                }
-            })
-
-        finished_lots_with_bidders = []
-        for lot in finished_lots:
-            unique_bidders = lot.bids.values('user__username', 'user__email').annotate(max_amount=Max('amount')).order_by('-max_amount')[:3]
-            finished_lots_with_bidders.append({
-                'lot': lot,
-                'unique_bidders': unique_bidders,
-                'stats': {
-                    'views': lot.views,
-                    'bids_count': lot.bids.count(),
-                    'unique_bidders_count': lot.bids.values('user').distinct().count(),
-                    'comments_count': lot.comments.count(),
-                }
-            })
-
-        return render(request, 'auctions/user_lots.html', {
-            'active_lots': active_lots_with_stats,
-            'finished_lots': finished_lots_with_bidders,
-        })
-
-    def post(self, request):
-        if 'cancel_lot' in request.POST:
-            lot_id = request.POST.get('lot_id')
-            lot = get_object_or_404(Lot, pk=lot_id, created_by=request.user)
-            if lot.has_bids():
-                messages.error(request, "Нельзя отменить лот, на который уже сделаны ставки.")
-            else:
-                lot.delete()
-                messages.success(request, "Лот успешно отменен.")
-        return redirect('user_lots')
