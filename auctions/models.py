@@ -73,6 +73,11 @@ class Lot(models.Model):
         validators=[MinValueValidator(1.00)],
         verbose_name='Минимальный шаг ставки'
     )
+    has_been_extended = models.BooleanField(
+        default=False,
+        verbose_name=_('Has been extended'),
+        help_text=_('Indicates if the auction has been extended due to no bids.')
+    )
 
     def is_auction_ended(self):
         return timezone.now() >= self.auction_end

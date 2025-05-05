@@ -12,6 +12,7 @@ from django.http import JsonResponse
 from django.db import transaction
 
 
+
 def process_auto_bids(lot):
     """Обрабатывает автоматические ставки до достижения лимита, постепенно повышая на bid_step."""
     while True:
@@ -55,7 +56,6 @@ def process_auto_bids(lot):
 class HomeView(View):
     def get(self, request):
         lots = Lot.objects.all()
-        print(f"Initial lots: {lots.count()}")
 
         search_query = request.GET.get('search', '')
         category = request.GET.get('category', '')
@@ -66,43 +66,32 @@ class HomeView(View):
         expiring_soon = request.GET.get('expiring_soon', '')
         active_only = request.GET.get('active_only', '')
 
-        print(f"Filters: search={search_query}, category={category}, tag={tag}, condition={condition}, location={location}, sort_by={sort_by}, expiring_soon={expiring_soon}, active_only={active_only}")
-        print(f"Categories: {Lot.CATEGORY_CHOICES}")
-        print(f"Conditions: {Lot.CONDITION_CHOICES}")
-
         filters_applied = any([
             search_query, category, tag, condition, location, sort_by, expiring_soon, active_only
         ])
 
         if active_only:
             lots = lots.filter(is_active=True, auction_end__gt=timezone.now())
-            print(f"After active_only filter: {lots.count()}")
 
         if search_query:
             lots = lots.filter(Q(title__icontains=search_query))
-            print(f"After search filter: {lots.count()}")
 
         if category:
             lots = lots.filter(category=category)
-            print(f"After category filter: {lots.count()}")
 
         if tag:
             lots = lots.filter(tags__icontains=tag)
-            print(f"After tag filter: {lots.count()}")
 
         if condition:
             lots = lots.filter(condition=condition)
-            print(f"After condition filter: {lots.count()}")
 
         if location:
             lots = lots.filter(
                 Q(location_country__icontains=location) | Q(location_city__icontains=location)
             )
-            print(f"After location filter: {lots.count()}")
 
         if expiring_soon:
             lots = lots.filter(auction_end__lte=timezone.now() + timedelta(hours=24))
-            print(f"After expiring_soon filter: {lots.count()}")
 
         if sort_by == 'price_desc':
             lots = lots.order_by('-current_price', '-initial_price')
@@ -126,11 +115,9 @@ class HomeView(View):
         if not filters_applied:
             latest_lots = lots[:3]
             other_lots = lots[3:]
-            print(f"Latest lots: {latest_lots.count()}, Other lots: {other_lots.count()}")
         else:
             latest_lots = None
             other_lots = None
-            print(f"Filtered lots: {lots.count()}")
 
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             if filters_applied:
@@ -197,7 +184,6 @@ class HomeView(View):
             'filters_applied': filters_applied,
         })
 
-
 class LotDetailView(View):
     def get(self, request, pk):
         lot = get_object_or_404(Lot.objects.prefetch_related('bids__user', 'comments__user', 'comments__replies'), pk=pk)
@@ -210,8 +196,13 @@ class LotDetailView(View):
         current_bid = lot.bids.filter(user=request.user).order_by('-amount').first() if request.user.is_authenticated else None
         root_comments = lot.comments.filter(parent__isnull=True)
 
-        if lot.is_active and lot.auction_end <= timezone.now() and not lot.has_bids():
-            lot.auction_end = timezone.now() + timedelta(minutes=10)
+        # Продление времени аукциона только один раз
+        if (lot.is_active and 
+            lot.auction_end <= timezone.now() and 
+            not lot.has_bids() and 
+            not lot.has_been_extended):
+            lot.auction_end = timezone.now() + timedelta(minutes=2)
+            lot.has_been_extended = True  # Отмечаем, что продление выполнено
             lot.save()
             print(f"Lot {lot.id} ({lot.title}) extended to: {lot.auction_end}")
 
@@ -399,7 +390,6 @@ class LotDetailView(View):
                 return redirect('home')
 
         return redirect('lot_detail', pk=pk)
-
 
 class CreateLotView(LoginRequiredMixin, View):
     def get(self, request):
