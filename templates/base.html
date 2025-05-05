@@ -52,6 +52,14 @@
             const updateInterval = 5000;
             let lastData = null;
 
+            // Объект для хранения состояния интерфейса
+            let uiState = {
+                openEditForms: [], // ID комментариев с открытой формой редактирования
+                openReplyForms: [], // ID комментариев с открытой формой ответа
+                visibleReplies: [], // ID комментариев с развернутыми ответами
+                formContents: {} // Содержимое текстовых полей форм
+            };
+
             // Функция для форматирования времени до окончания
             function formatTimeUntil(seconds) {
                 if (seconds <= 0) return '';
@@ -61,12 +69,93 @@
                 return `${minutes} мин`;
             }
 
+            // Сохранение состояния интерфейса
+            function saveUIState() {
+                uiState.openEditForms = [];
+                uiState.openReplyForms = [];
+                uiState.visibleReplies = [];
+                uiState.formContents = {};
+
+                // Сохраняем открытые формы редактирования
+                document.querySelectorAll('.edit-comment-form').forEach(form => {
+                    if (form.style.display === 'block') {
+                        const commentId = form.dataset.commentId;
+                        uiState.openEditForms.push(commentId);
+                        const textarea = form.querySelector('textarea[name="content"]');
+                        if (textarea) {
+                            uiState.formContents[`edit-${commentId}`] = textarea.value;
+                        }
+                    }
+                });
+
+                // Сохраняем открытые формы ответа
+                document.querySelectorAll('.reply-comment-form').forEach(form => {
+                    if (form.style.display === 'block') {
+                        const commentId = form.dataset.commentId;
+                        uiState.openReplyForms.push(commentId);
+                        const textarea = form.querySelector('textarea[name="content"]');
+                        if (textarea) {
+                            uiState.formContents[`reply-${commentId}`] = textarea.value;
+                        }
+                    }
+                });
+
+                // Сохраняем развернутые ответы
+                document.querySelectorAll('.replies-container').forEach(container => {
+                    if (container.style.display === 'block') {
+                        const commentId = container.id.replace('replies-', '');
+                        uiState.visibleReplies.push(commentId);
+                    }
+                });
+            }
+
+            // Восстановление состояния интерфейса
+            // Восстановление состояния интерфейса
+            function restoreUIState() {
+                uiState.openEditForms.forEach(commentId => {
+                    const form = document.querySelector(`.edit-comment-form[data-comment-id="${commentId}"]`);
+                    if (form) {
+                        form.style.display = 'block';
+                        const textarea = form.querySelector('textarea[name="content"]');
+                        if (textarea && uiState.formContents[`edit-${commentId}`]) {
+                            textarea.value = uiState.formContents[`edit-${commentId}`];
+                        }
+                    }
+                });
+
+                uiState.openReplyForms.forEach(commentId => {
+                    const form = document.querySelector(`.reply-comment-form[data-comment-id="${commentId}"]`);
+                    if (form) {
+                        form.style.display = 'block';
+                        const textarea = form.querySelector('textarea[name="content"]');
+                        if (textarea && uiState.formContents[`reply-${commentId}`]) {
+                            textarea.value = uiState.formContents[`reply-${commentId}`];
+                        }
+                    }
+                });
+
+                uiState.visibleReplies.forEach(commentId => {
+                    const container = document.getElementById(`replies-${commentId}`);
+                    if (container) { // Исправлено: убрано personally
+                        container.style.display = 'block';
+                        const button = document.querySelector(`.show-replies-btn[data-comment-id="${commentId}"]`);
+                        if (button) {
+                            const repliesCount = button.dataset.repliesCount;
+                            button.textContent = `Скрыть ответы (${repliesCount})`; // Уточнен текст кнопки
+                        }
+                    }
+                });
+            }
+
             function updatePageData() {
+                saveUIState();
+
                 fetch(window.location.href, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 })
                     .then(response => response.json())
                     .then(data => {
+                        console.log('Received data:', data); // Логирование для отладки
                         if (JSON.stringify(data) === JSON.stringify(lastData)) return;
                         lastData = data;
 
@@ -114,7 +203,7 @@
                             const commentsListEl = document.getElementById('comments-list');
                             if (commentsListEl) {
                                 commentsListEl.innerHTML = '';
-                                if (data.comments.length > 0) {
+                                if (data.comments && data.comments.length > 0) {
                                     data.comments.forEach(comment => {
                                         const date = new Date(comment.created_at).toLocaleString();
                                         let commentHtml = `
@@ -221,6 +310,7 @@
                                 }
                             }
 
+                            restoreUIState();
                             bindCommentEvents();
                         }
                     })
