@@ -582,7 +582,11 @@ class UserLotsView(LoginRequiredMixin, View):
                             'amount': float(bidder['max_amount'])
                         }
                         for bidder in unique_bidders
-                    ]
+                    ],
+                    'views': lot.views,
+                    'bids_count': lot.bids.count(),
+                    'unique_bidders_count': lot.bids.values('user').distinct().count(),
+                    'comments_count': lot.comments.count(),
                 })
 
             return JsonResponse({
@@ -591,9 +595,25 @@ class UserLotsView(LoginRequiredMixin, View):
                         'title': lot.title,
                         'id': lot.id,
                         'current_price': float(lot.current_price) if lot.current_price else None,
+                        'views': lot.views,
+                        'bids_count': lot.bids.count(),
+                        'unique_bidders_count': lot.bids.values('user').distinct().count(),
+                        'comments_count': lot.comments.count(),
                     } for lot in active_lots
                 ],
                 'finished_lots': finished_lots_data
+            })
+
+        active_lots_with_stats = []
+        for lot in active_lots:
+            active_lots_with_stats.append({
+                'lot': lot,
+                'stats': {
+                    'views': lot.views,
+                    'bids_count': lot.bids.count(),
+                    'unique_bidders_count': lot.bids.values('user').distinct().count(),
+                    'comments_count': lot.comments.count(),
+                }
             })
 
         finished_lots_with_bidders = []
@@ -601,11 +621,17 @@ class UserLotsView(LoginRequiredMixin, View):
             unique_bidders = lot.bids.values('user__username', 'user__email').annotate(max_amount=Max('amount')).order_by('-max_amount')[:3]
             finished_lots_with_bidders.append({
                 'lot': lot,
-                'unique_bidders': unique_bidders
+                'unique_bidders': unique_bidders,
+                'stats': {
+                    'views': lot.views,
+                    'bids_count': lot.bids.count(),
+                    'unique_bidders_count': lot.bids.values('user').distinct().count(),
+                    'comments_count': lot.comments.count(),
+                }
             })
 
         return render(request, 'auctions/user_lots.html', {
-            'active_lots': active_lots,
+            'active_lots': active_lots_with_stats,
             'finished_lots': finished_lots_with_bidders,
         })
 
