@@ -12,6 +12,7 @@ from datetime import timedelta
 from django.http import JsonResponse
 import json
 from django.db import transaction
+from django.db.models import Sum
 
 
 def process_auto_bids(lot):
@@ -216,7 +217,7 @@ class LotDetailView(View):
 
         # Проверка продления лота
         if lot.is_active and lot.auction_end <= timezone.now() and not lot.has_bids():
-            lot.auction_end = timezone.now() + timedelta(minutes=30)
+            lot.auction_end = timezone.now() + timedelta(minutes=10)
             lot.save()
             print(f"Lot {lot.id} ({lot.title}) extended to: {lot.auction_end}")
 
@@ -457,7 +458,38 @@ class EditLotView(LoginRequiredMixin, View):
 class ProfileView(LoginRequiredMixin, View):
     def get(self, request):
         user = request.user
-        return render(request, 'auctions/profile.html', {'user': user})
+        
+        # Статистика
+        total_lots = Lot.objects.filter(created_by=user).count()
+        active_lots = Lot.objects.filter(created_by=user, is_active=True, auction_end__gt=timezone.now()).count()
+        finished_lots = Lot.objects.filter(created_by=user, auction_end__lte=timezone.now()).count()
+        total_bids = Bid.objects.filter(user=user).count()
+        won_lots = Lot.objects.filter(
+            bids__user=user,
+            auction_end__lt=timezone.now(),
+            current_price__in=Bid.objects.filter(user=user).values('amount')
+        ).distinct().count()
+        total_spent = Bid.objects.filter(
+            user=user,
+            lot__auction_end__lt=timezone.now(),
+            amount__in=Lot.objects.filter(bids__user=user).values('current_price')
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        total_comments = Comment.objects.filter(user=user).count()
+        participated_lots = Lot.objects.filter(bids__user=user).distinct().count()
+
+        return render(request, 'auctions/profile.html', {
+            'user': user,
+            'stats': {
+                'total_lots': total_lots,
+                'active_lots': active_lots,
+                'finished_lots': finished_lots,
+                'total_bids': total_bids,
+                'won_lots': won_lots,
+                'total_spent': total_spent,
+                'total_comments': total_comments,
+                'participated_lots': participated_lots,
+            }
+        })
 
     def post(self, request):
         user = request.user
@@ -467,7 +499,6 @@ class ProfileView(LoginRequiredMixin, View):
             user.save()
             messages.success(request, "Профиль обновлен.")
         return redirect('profile')
-
 
 class ParticipationHistoryView(LoginRequiredMixin, View):
     def get(self, request):
