@@ -1,0 +1,8 @@
+<!-- templates/users/registration/logged_out.html -->
+
+{% extends 'base.html' %}
+{% block content %}
+<h1>Выход выполнен</h1>
+<p>Вы успешно вышли из системы.</p>
+<a href="{% url 'login' %}">Войти снова</a>
+{% endblock %}

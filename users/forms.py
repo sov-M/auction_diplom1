@@ -15,7 +15,6 @@ User = get_user_model()
 
 
 class AuthenticationForm(DjangoAuthenticationForm):
-
     def clean(self):
         username = self.cleaned_data.get('username')
         password = self.cleaned_data.get('password')
@@ -26,15 +25,14 @@ class AuthenticationForm(DjangoAuthenticationForm):
                 username=username,
                 password=password,
             )
-            if not self.user_cache.email_verify:
+            if self.user_cache is None:
+                raise self.get_invalid_login_error()
+            elif not self.user_cache.email_verify:
                 send_email_for_verify(self.request, self.user_cache)
                 raise ValidationError(
                     'Email not verify, check your email',
                     code='invalid_login',
                 )
-
-            if self.user_cache is None:
-                raise self.get_invalid_login_error()
             else:
                 self.confirm_login_allowed(self.user_cache)
 
