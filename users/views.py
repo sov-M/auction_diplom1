@@ -14,12 +14,16 @@ from django.http import JsonResponse
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.contrib.auth.views import LoginView, LogoutView, PasswordResetView, PasswordResetDoneView, PasswordResetConfirmView, PasswordResetCompleteView, PasswordChangeView, PasswordChangeDoneView
+
 
 User = get_user_model()
 
 
 class MyLoginView(LoginView):
     form_class = AuthenticationForm
+    template_name = 'users/registration/login.html'  # Указываем правильный путь к шаблону
+
 
 
 class EmailVerify(View):
@@ -43,7 +47,7 @@ class EmailVerify(View):
 
 
 class Register(View):
-    template_name = 'users/register.html'
+    template_name = 'users/registration/register.html'
 
     def get(self, request):
         context = {
@@ -258,3 +262,24 @@ class UserLotsView(LoginRequiredMixin, View):
                 lot.delete()
                 messages.success(request, "Лот успешно отменен.")
         return redirect('user_lots')
+    
+class MyLogoutView(LogoutView):
+    template_name = 'users/registration/logged_out.html'
+
+class MyPasswordResetView(PasswordResetView):
+    template_name = 'users/registration/password_reset_form.html'
+
+class MyPasswordResetDoneView(PasswordResetDoneView):
+    template_name = 'users/registration/password_reset_done.html'
+
+class MyPasswordResetConfirmView(PasswordResetConfirmView):
+    template_name = 'users/registration/password_reset_confirm.html'
+
+class MyPasswordResetCompleteView(PasswordResetCompleteView):
+    template_name = 'users/registration/password_reset_complete.html'
+
+class MyPasswordChangeView(PasswordChangeView):
+    template_name = 'users/registration/password_change_form.html'
+
+class MyPasswordChangeDoneView(PasswordChangeDoneView):
+    template_name = 'users/registration/password_change_done.html'
