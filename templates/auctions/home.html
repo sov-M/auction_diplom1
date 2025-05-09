@@ -1,8 +1,9 @@
+<!-- templates/auctions/home.html -->
+
 {% extends 'base.html' %}
 {% block page_id %}home{% endblock %}
 {% block content %}
 
-<!-- Стили -->
 <style>
     .filter-form {
         margin-bottom: 2rem;
@@ -14,27 +15,55 @@
     }
 
     .filter-container .form-control::placeholder {
-    color: #ffffff; 
-}
-    
-/* Стили для <option> */
-.filter-container .form-control option {
-    background: linear-gradient(45deg, #11a2a7bd, #880745af); /* Фон как в .dropdown-menu */
-    color: #e2e8f0; /* Цвет текста как в .dropdown-menu */
-    padding: 0.7rem 1.5rem; /* Отступы как в .dropdown-menu a */
-    border: none;
-}
+        color: #ffffff;
+    }
 
-/* Placeholder для <option value=""> */
-.filter-container .form-control option[value=""][selected] {
-    color: #a0e7ff;
-}
+    /* Стили для <select> */
+    .filter-container .form-control {
+        flex: 1;
+        min-width: 0;
+        padding: 0.8rem;
+        border: 2px solid #00f7ff; /* Рамка из .dropdown-menu */
+        border-radius: 10px; /* Закругление углов */
+        background: linear-gradient(45deg, #11a2a7bd, #880745af); /* Фон из .dropdown-menu */
+        color: #e2e8f0; /* Цвет текста */
+        font-size: 1rem;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        appearance: none; /* Убираем стандартный вид браузера */
+        cursor: pointer;
+    }
 
-/* Ховер для <option> */
-.filter-container .form-control option:hover {
-    background: rgba(0, 247, 255, 0.2); /* Ховер как в .dropdown-menu a:hover */
-    color: #ff007a; /* Цвет текста при ховере */
-}
+    .filter-container .form-control:focus {
+        border-color: #ff007a; /* Цвет рамки при фокусе */
+        box-shadow: 0 0 10px rgba(255, 0, 122, 0.5);
+        outline: none;
+    }
+
+    /* Стили для <option> */
+    .filter-container .form-control option {
+        background:rgb(5, 5, 5); /* Запасной однотонный фон для лучшей поддержки */
+        color: #e2e8f0; /* Цвет текста из .dropdown-menu a */
+        font-size: 1rem;
+    }
+
+    /* Попытка стилизации hover для option (работает только в Chrome) */
+    .filter-container .form-control option:hover {
+        background: rgba(0, 247, 255, 0.2); /* Эффект наведения из .dropdown-menu a:hover */
+        color: #ff007a; /* Цвет при наведении */
+    }
+
+    .filter-container .form-control option[value=""][selected] {
+        color: #a0e7ff; /* Цвет для выбранного placeholder */
+    }
+
+    /* Стили для стрелки <select> */
+    .filter-container .form-control {
+        position: relative;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300f7ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 1.5em;
+    }
 
     .filter-container {
         display: flex;
@@ -42,23 +71,6 @@
         gap: 1rem;
         margin-bottom: 1rem;
         color: white;
-    }
-
-    .filter-container .form-control {
-        flex: 1;
-        min-width: 0;
-        padding: 0.8rem;
-        border: 2px solid #00f7ff;
-        border-radius: 5px;
-        background: rgba(255, 255, 255, 0.1);
-        color: #e2e8f0;
-        font-size: 1rem;
-        transition: border-color 0.3s ease;
-    }
-
-    .filter-container .form-control:focus {
-        border-color: #ff007a;
-        outline: none;
     }
 
     .filter-options {
@@ -119,12 +131,13 @@
     }
 
     .btn-success {
-        background: linear-gradient(45deg, #00f7ff, #ff007a);
-        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid #00f7ff;
+        color: #e2e8f0;  
     }
 
     .btn-success:hover {
-        background: linear-gradient(45deg, #ff007a, #00f7ff);
+        background: rgba(255, 255, 255, 0.2);
         transform: scale(1.05);
     }
 
@@ -218,6 +231,7 @@
 </style>
 
 <h1>MSOVM AUCTION</h1>
+
 <!-- Форма фильтрации -->
 <form method="get" class="filter-form">
     <div class="filter-container">
@@ -267,8 +281,6 @@
         </div>
     </div>
 </form>
-
-
 
 <!-- Отображение лотов -->
 {% if filters_applied %}
@@ -329,4 +341,5 @@
         {% endfor %}
     </div>
 {% endif %}
+
 {% endblock %}
