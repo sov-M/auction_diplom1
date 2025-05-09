@@ -1,18 +1,228 @@
-<!-- templates/auctions/home.html -->
 {% extends 'base.html' %}
+{% block page_id %}home{% endblock %}
 {% block content %}
-<h1>Активные лоты</h1>
 
+<!-- Стили -->
+<style>
+    .filter-form {
+        margin-bottom: 2rem;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 1.5rem;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        border: 2px solid #00f7ff;
+    }
+
+    .filter-container .form-control::placeholder {
+    color: #ffffff; 
+}
+    
+/* Стили для <option> */
+.filter-container .form-control option {
+    background: linear-gradient(45deg, #11a2a7bd, #880745af); /* Фон как в .dropdown-menu */
+    color: #e2e8f0; /* Цвет текста как в .dropdown-menu */
+    padding: 0.7rem 1.5rem; /* Отступы как в .dropdown-menu a */
+    border: none;
+}
+
+/* Placeholder для <option value=""> */
+.filter-container .form-control option[value=""][selected] {
+    color: #a0e7ff;
+}
+
+/* Ховер для <option> */
+.filter-container .form-control option:hover {
+    background: rgba(0, 247, 255, 0.2); /* Ховер как в .dropdown-menu a:hover */
+    color: #ff007a; /* Цвет текста при ховере */
+}
+
+    .filter-container {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        color: white;
+    }
+
+    .filter-container .form-control {
+        flex: 1;
+        min-width: 0;
+        padding: 0.8rem;
+        border: 2px solid #00f7ff;
+        border-radius: 5px;
+        background: rgba(255, 255, 255, 0.1);
+        color: #e2e8f0;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+    }
+
+    .filter-container .form-control:focus {
+        border-color: #ff007a;
+        outline: none;
+    }
+
+    .filter-options {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 1.5rem;
+        align-items: center;
+    }
+
+    .filter-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #e2e8f0;
+        font-size: 1rem;
+    }
+
+    .filter-checkbox input[type="checkbox"] {
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #00f7ff;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        cursor: pointer;
+        transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    .filter-checkbox input[type="checkbox"]:checked {
+        background: linear-gradient(45deg, #00f7ff, #ff007a);
+        border-color: #ff007a;
+    }
+
+    .filter-checkbox input[type="checkbox"]:checked::after {
+        content: '✔';
+        color: #fff;
+        font-size: 14px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+    }
+
+    .filter-buttons {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .btn {
+        padding: 0.8rem 1.5rem;
+        border: none;
+        border-radius: 5px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background 0.3s ease, transform 0.2s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-success {
+        background: linear-gradient(45deg, #00f7ff, #ff007a);
+        color: #fff;
+    }
+
+    .btn-success:hover {
+        background: linear-gradient(45deg, #ff007a, #00f7ff);
+        transform: scale(1.05);
+    }
+
+    .btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid #00f7ff;
+        color: #e2e8f0;
+    }
+
+    .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.05);
+    }
+
+    .lot-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .lot {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 1.5rem;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        border: 2px solid #00f7ff;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .lot:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 247, 255, 0.6);
+    }
+
+    .lot img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+    }
+
+    .lot h3 {
+        font-size: 1.4rem;
+        margin-bottom: 0.5rem;
+        color: #fff;
+        text-shadow: 0 0 10px rgba(0, 247, 255, 0.5);
+    }
+
+    .lot h3 a {
+        color: #00f7ff;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .lot h3 a:hover {
+        color: #ff007a;
+    }
+
+    .lot p {
+        margin: 0.3rem 0;
+        color: #cbd5e1;
+    }
+
+    @media (max-width: 768px) {
+        .filter-container {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-options {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .filter-buttons {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .filter-buttons .btn,
+        .filter-buttons a.btn {
+            width: 100%;
+        }
+
+        .lot {
+            padding: 1rem;
+        }
+    }
+</style>
+
+<h1>MSOVM AUCTION</h1>
 <!-- Форма фильтрации -->
 <form method="get" class="filter-form">
-    <div class="filter-group">
-        <label for="search">Поиск по названию:</label>
-        <input type="text" name="search" id="search" value="{{ search_query }}" placeholder="Введите название">
-    </div>
-
-    <div class="filter-group">
-        <label for="category">Категория:</label>
-        <select name="category" id="category">
+    <div class="filter-container">
+        <input type="text" name="search" id="search" value="{{ search_query }}" placeholder="Поиск по названию" class="form-control">
+        <select name="category" id="category" class="form-control">
             <option value="">Все категории</option>
             {% for cat_value, cat_label in categories %}
             <option value="{{ cat_value }}" {% if selected_category == cat_value %}selected{% endif %}>
@@ -20,11 +230,7 @@
             </option>
             {% endfor %}
         </select>
-    </div>
-
-    <div class="filter-group">
-        <label for="condition">Состояние:</label>
-        <select name="condition" id="condition">
+        <select name="condition" id="condition" class="form-control">
             <option value="">Все состояния</option>
             {% for cond_value, cond_label in conditions %}
             <option value="{{ cond_value }}" {% if selected_condition == cond_value %}selected{% endif %}>
@@ -32,21 +238,9 @@
             </option>
             {% endfor %}
         </select>
-    </div>
-
-    <div class="filter-group">
-        <label for="tag">Тег:</label>
-        <input type="text" name="tag" id="tag" value="{{ selected_tag }}" placeholder="Введите тег">
-    </div>
-
-    <div class="filter-group">
-        <label for="location">Местоположение:</label>
-        <input type="text" name="location" id="location" value="{{ selected_location }}" placeholder="Страна или город">
-    </div>
-
-    <div class="filter-group">
-        <label for="sort_by">Сортировка:</label>
-        <select name="sort_by" id="sort_by">
+        <input type="text" name="tag" id="tag" value="{{ selected_tag }}" placeholder="Тег" class="form-control">
+        <input type="text" name="location" id="location" value="{{ selected_location }}" placeholder="Местоположение" class="form-control">
+        <select name="sort_by" id="sort_by" class="form-control">
             <option value="">По умолчанию</option>
             <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>Цена (убывание)</option>
             <option value="price_asc" {% if sort_by == 'price_asc' %}selected{% endif %}>Цена (возрастание)</option>
@@ -58,49 +252,23 @@
             <option value="bids_asc" {% if sort_by == 'bids_asc' %}selected{% endif %}>Ставки (меньше)</option>
         </select>
     </div>
-
-    <div class="filter-group">
-        <label for="expiring_soon">
+    <div class="filter-options">
+        <label class="filter-checkbox">
             <input type="checkbox" name="expiring_soon" id="expiring_soon" value="1" {% if expiring_soon %}checked{% endif %}>
             Скоро заканчивающиеся (в течение 24 часов)
         </label>
-    </div>
-
-    <div class="filter-group">
-        <label for="active_only">
+        <label class="filter-checkbox">
             <input type="checkbox" name="active_only" id="active_only" value="1" {% if active_only %}checked{% endif %}>
             Только активные лоты
         </label>
+        <div class="filter-buttons">
+            <button type="submit" class="btn btn-success">Применить</button>
+            <a href="{% url 'home' %}" class="btn btn-secondary">Сбросить фильтры</a>
+        </div>
     </div>
-
-    <button type="submit">Применить фильтры</button>
-    <a href="{% url 'home' %}">Сбросить фильтры</a>
 </form>
 
-<!-- Стили для формы -->
-<style>
-    .filter-form {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 15px;
-        margin-bottom: 20px;
-    }
 
-    .filter-group {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .filter-group label {
-        margin-bottom: 5px;
-    }
-
-    .filter-group input,
-    .filter-group select {
-        padding: 5px;
-        width: 200px;
-    }
-</style>
 
 <!-- Отображение лотов -->
 {% if filters_applied %}

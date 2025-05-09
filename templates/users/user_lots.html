@@ -5,6 +5,81 @@
 
 
 {% block content %}
+
+<style>
+    .lots-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+
+    .lot-card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 2px solid #00f7ff;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 5px 20px rgba(0, 247, 255, 0.3);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .lot-card:hover {
+        transform: translateY(-10px) rotate(1deg);
+        box-shadow: 0 10px 30px rgba(0, 247, 255, 0.5);
+    }
+
+    .lot-card .lot-info {
+        flex: 1;
+        padding-right: 1.5rem;
+    }
+
+    .lot-card .lot-stats {
+        flex: 1;
+        border-left: 3px solid #ff007a;
+        padding-left: 1.5rem;
+    }
+
+    .lot-card .lot-stats ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .lot-card .lot-stats ul li {
+        margin: 0.5rem 0;
+        color: #cbd5e1;
+    }
+
+    .lot-card .lot-actions {
+        margin-top: 1.5rem;
+        text-align: center;
+    }
+
+    .lot-card .lot-actions form {
+        display: inline-block;
+        margin: 0 0.7rem;
+    }
+
+    @media (max-width: 768px) {
+        .lot-card {
+            display: block;
+        }
+
+        .lot-card .lot-stats {
+            border-left: none;
+            border-top: 3px solid #ff007a;
+            padding-top: 1.5rem;
+            padding-left: 0;
+        }
+
+        .lot-card .lot-actions .btn {
+            display: block;
+            width: 100%;
+            margin: 0.7rem 0;
+        }
+    }
+</style>
+
 <h1>Мои лоты</h1>
 
 <h2>Активные лоты</h2>

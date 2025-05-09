@@ -3,6 +3,68 @@
 {% extends 'base.html' %}
 
 {% block content %}
+
+<style>
+    .profile-stats ul {
+        list-style: none;
+        padding: 0;
+        margin: 1.5rem 0;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        border: 2px solid #00f7ff;
+        padding: 1.5rem;
+    }
+
+    .profile-stats ul li {
+        padding: 0.7rem 0;
+        font-size: 1.2rem;
+        color: #e2e8f0;
+        transition: color 0.3s ease;
+    }
+
+    .profile-stats ul li:hover {
+        color: #00f7ff;
+    }
+
+    .profile-stats ul ul {
+        margin-left: 2rem;
+        border-left: 3px solid #ff007a;
+        padding-left: 1.5rem;
+    }
+
+    .profile-stats ul ul li {
+        font-size: 1.1rem;
+        color: #cbd5e1;
+    }
+
+    .profile-actions {
+        margin-top: 2rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .profile-actions p {
+        flex: 1 1 100%;
+    }
+
+    .profile-actions .btn {
+        flex: 1 1 auto;
+    }
+
+    @media (max-width: 600px) {
+        .profile-stats ul li {
+            font-size: 1rem;
+        }
+
+        .profile-actions .btn {
+            flex: 1 1 100%;
+            text-align: center;
+        }
+    }
+</style>
+
 <h1>Профиль: {{ user.username }}</h1>
 <p>Email: {{ user.email }}</p>
 

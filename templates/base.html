@@ -9,31 +9,453 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" href="{% static 'main/favicon.ico' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <title>Аукционы</title>
+
+    <style>
+        /* Общие стили */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #000000 0%, #2c5282 100%);
+            color: #e2e8f0;
+            line-height: 1.7;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 80%;
+            margin: 0 auto;
+            padding: 25px 20px;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            color: #fff;
+            text-shadow: 0 0 10px rgba(0, 247, 255, 0.5);
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #00f7ff, #ff007a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            border-bottom: 3px solid #00f7ff;
+            padding-bottom: 0.7rem;
+        }
+
+        h2 {
+            font-size: 2.2rem;
+            font-weight: 600;
+        }
+
+        p {
+            margin: 0.7rem 0;
+            color: #cbd5e1;
+        }
+
+        /* Стили для кнопок */
+        .btn {
+            display: inline-block;
+            padding: 0.9rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: linear-gradient(45deg, #00f7ff, #ff007a);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 247, 255, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 247, 255, 0.6);
+            background: linear-gradient(45deg, #ff007a, #00f7ff);
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #1e40af, #3b82f6);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(45deg, #3b82f6, #1e40af);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #22c55e, #86efac);
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(45deg, #86efac, #22c55e);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #6b7280, #9ca3af);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(45deg, #9ca3af, #6b7280);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #ef4444, #f87171);
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(45deg, #f87171, #ef4444);
+        }
+
+        .btn-warning {
+            background: linear-gradient(45deg, #f59e0b, #fbbf24);
+            color: #1e3a8a;
+        }
+
+        .btn-warning:hover {
+            background: linear-gradient(45deg, #fbbf24, #f59e0b);
+        }
+
+        .btn-info {
+            background: linear-gradient(45deg, #06b6d4, #22d3ee);
+        }
+
+        .btn-info:hover {
+            background: linear-gradient(45deg, #22d3ee, #06b6d4);
+        }
+
+        .btn-link {
+            background: none;
+            color: #00f7ff;
+            text-shadow: none;
+            box-shadow: none;
+            padding: 0;
+            text-transform: none;
+        }
+
+        .btn-link:hover {
+            color: #ff007a;
+            text-decoration: underline;
+        }
+
+        /* Стили для форм */
+        form {
+            margin: 1.5rem 0;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.9rem;
+            border: 2px solid #00f7ff;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: #ff007a;
+            box-shadow: 0 0 10px rgba(255, 0, 122, 0.5);
+            outline: none;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Стили для фильтров (заглушка, если фильтры используют кастомные классы) */
+        /* Если фильтры имеют классы вроде .filter, .filter-form, добавьте их стили здесь */
+        /* Например:
+.filter {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #00f7ff;
+    padding: 0.5rem;
+}
+.filter select, .filter input {
+    background: transparent;
+    border-color: #00f7ff;
+}
+*/
+
+        /* Стили для навигации */
+        .navbar {
+            background: linear-gradient(180deg, #8b356a85 0%, #3b7e597e 100%);
+            padding: 0 3rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            height: 80px;
+            border-radius: 20px;
+        }
+
+        .navbar-logo {
+            display: flex;
+            align-items: center;
+            margin: 0;
+        }
+
+        .navbar-logo img {
+            width: 64px;
+            height: 64px;
+            transition: transform 0.3s ease;
+            border-radius: 20px;
+        }
+
+        .navbar-logo img:hover {
+            transform: scale(1.2);
+        }
+
+        .navbar-user {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 0;
+        }
+
+        .navbar-user .username {
+            color: #00f7ff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: color 0.3s ease, text-shadow 0.3s ease;
+        }
+
+        .navbar-user .username:hover {
+            color: #ff007a;
+            text-shadow: 0 0 10px rgba(255, 0, 122, 0.5);
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            background: linear-gradient(45deg, #11a2a7bd, #880745af);
+            backdrop-filter: blur(10px);
+            border: 2px solid #00f7ff;
+            border-radius: 20px;
+            box-shadow: 0 5px 20px rgba(0, 247, 255, 0.3);
+            min-width: 200px;
+            padding: 1rem 0;
+            z-index: 1001;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        .dropdown-menu:not(.show) {
+            animation: fadeOut 0.3s ease forwards;
+        }
+
+        .dropdown-menu a,
+        .dropdown-menu form {
+            display: block;
+            padding: 0.7rem 1.5rem;
+            color: #e2e8f0;
+            text-decoration: none;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .dropdown-menu a:hover,
+        .dropdown-menu form:hover {
+            background: rgba(0, 247, 255, 0.2);
+            color: #ff007a;
+        }
+
+        .dropdown-menu form {
+            margin: 0;
+        }
+
+        .dropdown-menu .btn-link {
+            color: #e2e8f0;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-menu .btn-link:hover {
+            color: #ff007a;
+            background: none;
+        }
+
+        /* Стили для сообщений */
+        .alert {
+            padding: 1.2rem;
+            margin: 1.5rem 0;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid #00f7ff;
+            color: #e2e8f0;
+        }
+
+        .alert-info {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.2);
+        }
+
+        .alert-danger {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        /* Анимации */
+        @keyframes glow {
+            0% {
+                text-shadow: 0 0 5px rgba(0, 247, 255, 0.5);
+            }
+
+            50% {
+                text-shadow: 0 0 15px rgba(0, 247, 255, 0.8);
+            }
+
+            100% {
+                text-shadow: 0 0 5px rgba(0, 247, 255, 0.5);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            to {
+                opacity: 0;
+                transform: translateY(-10px);
+                display: none;
+            }
+        }
+
+        h1:hover,
+        h2:hover {
+            animation: glow 1.5s infinite;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+
+            h2 {
+                font-size: 1.8rem;
+            }
+
+            .btn {
+                padding: 0.7rem 1.5rem;
+                font-size: 0.9rem;
+            }
+
+            .navbar {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 1.5rem 2rem;
+                height: auto;
+            }
+
+            .navbar-logo {
+                margin-bottom: 1rem;
+            }
+
+            .navbar-user {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .navbar-logo img {
+                width: 48px;
+                height: 48px;
+            }
+
+            .dropdown-menu {
+                width: 100%;
+                right: 0;
+                top: calc(100% + 5px);
+            }
+
+            .form-control {
+                padding: 0.7rem;
+            }
+        }
+    </style>
 </head>
 
 <body class="container" data-page="{% block page_id %}{% endblock %}">
-    <ul class="list-group">
-        <li class="list-group-item">
-            {% if user.is_authenticated %}
-            <a href="{% url 'profile' %}">{{ user.username }}</a>
+    <nav class="navbar">
+        <a href="{% url 'home' %}" class="navbar-logo">
+            <img src="{% static 'main/logo.jpg' %}" alt="Главная">
+        </a>
+        <div class="navbar-user">
+            {% if user.is_superuser %}
+            <span class="username" id="user-menu-toggle">{{ user.username }}</span>
+            <div class="dropdown-menu" id="user-menu">
+                <a href="{% url 'profile' %}">Профиль</a>
+                <a href="{% url 'create_lot' %}">Создать лот</a>
+                <a href="{% url 'user_lots' %}">Мои лоты</a>
+                <a href="{% url 'participation_history' %}">История участия</a>
+                <a href="{% url 'win_history' %}">Выигранные</a>
+                <a href="{% url 'admin:index' %}">Админ-панель</a>
+                <a href="{% url 'password_change' %}">Сбросить пароль</a>
+                <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-link">Выход</button>
+                </form>
+            </div>
+            {% elif user.is_authenticated %}
+            <span class="username" id="user-menu-toggle">{{ user.username }}</span>
+            <div class="dropdown-menu" id="user-menu">
+                <a href="{% url 'profile' %}">Профиль</a>
+                <a href="{% url 'create_lot' %}">Создать лот</a>
+                <a href="{% url 'user_lots' %}">Мои лоты</a>
+                <a href="{% url 'participation_history' %}">История участия</a>
+                <a href="{% url 'win_history' %}">Выигранные</a>
+                <a href="{% url 'password_change' %}">Сбросить пароль</a>
+                <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-link">Выход</button>
+                </form>
+            </div>
             {% else %}
-            Гость
+            <a href="{% url 'login' %}" class="btn btn-primary">Войти</a>
             {% endif %}
-        </li>
-        <li class="list-group-item">
-            <a href="{% url 'home' %}">Главная</a>
-            {% if user.is_authenticated %}
-            <form action="{% url 'logout' %}" method="post" class="d-inline">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-link">Выйти</button>
-            </form>
-            | <a href="{% url 'create_lot' %}">Создать лот</a>
-            {% else %}
-            | <a href="{% url 'login' %}">Войти</a> | <a href="{% url 'register' %}">Регистрация</a>
-            {% endif %}
-        </li>
-    </ul>
+        </div>
+    </nav>
 
     {% if messages %}
     <div class="alert alert-info">
@@ -46,359 +468,365 @@
     {% block content %}
     {% endblock %}
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const pageId = document.body.dataset.page;
-            const updateInterval = 5000;
-            let lastData = null;
 
-            // Объект для хранения состояния интерфейса
-            let uiState = {
-                openEditForms: [], // ID комментариев с открытой формой редактирования
-                openReplyForms: [], // ID комментариев с открытой формой ответа
-                visibleReplies: [], // ID комментариев с развернутыми ответами
-                formContents: {} // Содержимое текстовых полей форм
-            };
+</body>
+<script>
+    // Управление выпадающим меню
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggle = document.getElementById('user-menu-toggle');
+        const menu = document.getElementById('user-menu');
 
-            // Функция для форматирования времени до окончания
-            function formatTimeUntil(seconds) {
-                if (seconds <= 0) return '';
-                const hours = Math.floor(seconds / 3600);
-                const minutes = Math.floor((seconds % 3600) / 60);
-                if (hours >= 1) return `${hours} ч`;
-                return `${minutes} мин`;
-            }
+        if (toggle && menu) {
+            toggle.addEventListener('click', function () {
+                menu.classList.toggle('show');
+            });
 
-            // Сохранение состояния интерфейса
-            function saveUIState() {
-                uiState.openEditForms = [];
-                uiState.openReplyForms = [];
-                uiState.visibleReplies = [];
-                uiState.formContents = {};
+            // Закрытие меню при клике вне его
+            document.addEventListener('click', function (event) {
+                if (!menu.contains(event.target) && !toggle.contains(event.target)) {
+                    menu.classList.remove('show');
+                }
+            });
+        }
 
-                // Сохраняем открытые формы редактирования
-                document.querySelectorAll('.edit-comment-form').forEach(form => {
-                    if (form.style.display === 'block') {
-                        const commentId = form.dataset.commentId;
-                        uiState.openEditForms.push(commentId);
-                        const textarea = form.querySelector('textarea[name="content"]');
-                        if (textarea) {
-                            uiState.formContents[`edit-${commentId}`] = textarea.value;
+        // Существующий код для обновления страницы
+        const pageId = document.body.dataset.page;
+        const updateInterval = 5000;
+        let lastData = null;
+
+        let uiState = {
+            openEditForms: [],
+            openReplyForms: [],
+            visibleReplies: [],
+            formContents: {}
+        };
+
+        function formatTimeUntil(seconds) {
+            if (seconds <= 0) return '';
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            if (hours >= 1) return `${hours} ч`;
+            return `${minutes} мин`;
+        }
+
+        function saveUIState() {
+            uiState.openEditForms = [];
+            uiState.openReplyForms = [];
+            uiState.visibleReplies = [];
+            uiState.formContents = {};
+
+            document.querySelectorAll('.edit-comment-form').forEach(form => {
+                if (form.style.display === 'block') {
+                    const commentId = form.dataset.commentId;
+                    uiState.openEditForms.push(commentId);
+                    const textarea = form.querySelector('textarea[name="content"]');
+                    if (textarea) {
+                        uiState.formContents[`edit-${commentId}`] = textarea.value;
+                    }
+                }
+            });
+
+            document.querySelectorAll('.reply-comment-form').forEach(form => {
+                if (form.style.display === 'block') {
+                    const commentId = form.dataset.commentId;
+                    uiState.openReplyForms.push(commentId);
+                    const textarea = form.querySelector('textarea[name="content"]');
+                    if (textarea) {
+                        uiState.formContents[`reply-${commentId}`] = textarea.value;
+                    }
+                }
+            });
+
+            document.querySelectorAll('.replies-container').forEach(container => {
+                if (container.style.display === 'block') {
+                    const commentId = container.id.replace('replies-', '');
+                    uiState.visibleReplies.push(commentId);
+                }
+            });
+        }
+
+        function restoreUIState() {
+            uiState.openEditForms.forEach(commentId => {
+                const form = document.querySelector(`.edit-comment-form[data-comment-id="${commentId}"]`);
+                if (form) {
+                    form.style.display = 'block';
+                    const textarea = form.querySelector('textarea[name="content"]');
+                    if (textarea && uiState.formContents[`edit-${commentId}`]) {
+                        textarea.value = uiState.formContents[`edit-${commentId}`];
+                    }
+                }
+            });
+
+            uiState.openReplyForms.forEach(commentId => {
+                const form = document.querySelector(`.reply-comment-form[data-comment-id="${commentId}"]`);
+                if (form) {
+                    form.style.display = 'block';
+                    const textarea = form.querySelector('textarea[name="content"]');
+                    if (textarea && uiState.formContents[`reply-${commentId}`]) {
+                        textarea.value = uiState.formContents[`reply-${commentId}`];
+                    }
+                }
+            });
+
+            uiState.visibleReplies.forEach(commentId => {
+                const container = document.getElementById(`replies-${commentId}`);
+                if (container) {
+                    container.style.display = 'block';
+                    const button = document.querySelector(`.show-replies-btn[data-comment-id="${commentId}"]`);
+                    if (button) {
+                        const repliesCount = button.dataset.repliesCount;
+                        button.textContent = `Скрыть ответы (${repliesCount})`;
+                    }
+                }
+            });
+        }
+
+        function updatePageData() {
+            saveUIState();
+
+            fetch(window.location.href, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Received data:', data);
+                    if (JSON.stringify(data) === JSON.stringify(lastData)) return;
+                    lastData = data;
+
+                    if (pageId === 'lot_detail') {
+                        const currentPriceEl = document.getElementById('current-price');
+                        if (currentPriceEl) {
+                            currentPriceEl.textContent = data.current_price ? data.current_price : 'Нет ставок';
                         }
-                    }
-                });
 
-                // Сохраняем открытые формы ответа
-                document.querySelectorAll('.reply-comment-form').forEach(form => {
-                    if (form.style.display === 'block') {
-                        const commentId = form.dataset.commentId;
-                        uiState.openReplyForms.push(commentId);
-                        const textarea = form.querySelector('textarea[name="content"]');
-                        if (textarea) {
-                            uiState.formContents[`reply-${commentId}`] = textarea.value;
-                        }
-                    }
-                });
-
-                // Сохраняем развернутые ответы
-                document.querySelectorAll('.replies-container').forEach(container => {
-                    if (container.style.display === 'block') {
-                        const commentId = container.id.replace('replies-', '');
-                        uiState.visibleReplies.push(commentId);
-                    }
-                });
-            }
-
-            // Восстановление состояния интерфейса
-            // Восстановление состояния интерфейса
-            function restoreUIState() {
-                uiState.openEditForms.forEach(commentId => {
-                    const form = document.querySelector(`.edit-comment-form[data-comment-id="${commentId}"]`);
-                    if (form) {
-                        form.style.display = 'block';
-                        const textarea = form.querySelector('textarea[name="content"]');
-                        if (textarea && uiState.formContents[`edit-${commentId}`]) {
-                            textarea.value = uiState.formContents[`edit-${commentId}`];
-                        }
-                    }
-                });
-
-                uiState.openReplyForms.forEach(commentId => {
-                    const form = document.querySelector(`.reply-comment-form[data-comment-id="${commentId}"]`);
-                    if (form) {
-                        form.style.display = 'block';
-                        const textarea = form.querySelector('textarea[name="content"]');
-                        if (textarea && uiState.formContents[`reply-${commentId}`]) {
-                            textarea.value = uiState.formContents[`reply-${commentId}`];
-                        }
-                    }
-                });
-
-                uiState.visibleReplies.forEach(commentId => {
-                    const container = document.getElementById(`replies-${commentId}`);
-                    if (container) { // Исправлено: убрано personally
-                        container.style.display = 'block';
-                        const button = document.querySelector(`.show-replies-btn[data-comment-id="${commentId}"]`);
-                        if (button) {
-                            const repliesCount = button.dataset.repliesCount;
-                            button.textContent = `Скрыть ответы (${repliesCount})`; // Уточнен текст кнопки
-                        }
-                    }
-                });
-            }
-
-            function updatePageData() {
-                saveUIState();
-
-                fetch(window.location.href, {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('Received data:', data); // Логирование для отладки
-                        if (JSON.stringify(data) === JSON.stringify(lastData)) return;
-                        lastData = data;
-
-                        if (pageId === 'lot_detail') {
-                            // Обновление текущей цены
-                            const currentPriceEl = document.getElementById('current-price');
-                            if (currentPriceEl) {
-                                currentPriceEl.textContent = data.current_price ? data.current_price : 'Нет ставок';
+                        const biddersListEl = document.getElementById('bidders-list');
+                        if (biddersListEl) {
+                            biddersListEl.innerHTML = '';
+                            if (data.bidders.length > 0) {
+                                let html = '<p>Все участники:</p><ul class="list-group">';
+                                data.bidders.forEach(bidder => {
+                                    const isCurrent = data.current_price && bidder.amount === data.current_price;
+                                    html += `<li class="list-group-item ${isCurrent ? 'list-group-item-success' : ''}">${bidder.username} (ставка: ${bidder.amount})</li>`;
+                                });
+                                html += '</ul>';
+                                biddersListEl.innerHTML = html;
+                            } else {
+                                biddersListEl.innerHTML = '<p>Ставок пока нет.</p>';
                             }
+                        }
 
-                            // Обновление списка участников
-                            const biddersListEl = document.getElementById('bidders-list');
-                            if (biddersListEl) {
-                                biddersListEl.innerHTML = '';
-                                if (data.bidders.length > 0) {
-                                    let html = '<p>Все участники:</p><ul class="list-group">';
-                                    data.bidders.forEach(bidder => {
-                                        const isCurrent = data.current_price && bidder.amount === data.current_price;
-                                        html += `<li class="list-group-item ${isCurrent ? 'list-group-item-success' : ''}">${bidder.username} (ставка: ${bidder.amount})</li>`;
-                                    });
-                                    html += '</ul>';
-                                    biddersListEl.innerHTML = html;
-                                } else {
-                                    biddersListEl.innerHTML = '<p>Ставок пока нет.</p>';
-                                }
-                            }
-
-                            // Обновление времени до окончания
-                            const timeUntilEl = document.getElementById('time-until');
-                            if (timeUntilEl) {
-                                if (data.is_auction_ended) {
-                                    timeUntilEl.remove();
-                                    if (!document.getElementById('auction-ended-message')) {
-                                        const message = document.createElement('p');
-                                        message.id = 'auction-ended-message';
-                                        message.textContent = 'Аукцион завершен.';
-                                        document.querySelector('.col-md-6')?.appendChild(message);
-                                    }
-                                } else {
-                                    timeUntilEl.textContent = `Время до окончания: ${formatTimeUntil(data.time_until)}`;
-                                }
-                            }
-
-                            // Обновление комментариев
-                            const commentsListEl = document.getElementById('comments-list');
-                            if (commentsListEl) {
-                                commentsListEl.innerHTML = '';
-                                if (data.comments && data.comments.length > 0) {
-                                    data.comments.forEach(comment => {
-                                        const date = new Date(comment.created_at).toLocaleString();
-                                        let commentHtml = `
-                                            <div class="card mt-2" id="comment-${comment.id}">
-                                                <div class="card-body">
-                                                    <p>${comment.content}</p>
-                                                    <p>Автор: ${comment.username} | ${date}</p>
-                                        `;
-                                        if (comment.can_edit) {
-                                            commentHtml += `
-                                                <button class="btn btn-sm btn-warning edit-comment-btn" data-comment-id="${comment.id}">Редактировать</button>
-                                                <form method="post" style="display:inline;" onsubmit="return confirm('Удалить комментарий?');" class="delete-comment-form">
-                                                    <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
-                                                    <input type="hidden" name="delete_comment" value="true">
-                                                    <input type="hidden" name="comment_id" value="${comment.id}">
-                                                    <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
-                                                </form>
-                                                <form method="post" class="edit-comment-form" style="display:none;" data-comment-id="${comment.id}">
-                                                    <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
-                                                    <textarea name="content" rows="3" class="form-control">${comment.content}</textarea>
-                                                    <input type="hidden" name="edit_comment" value="true">
-                                                    <input type="hidden" name="comment_id" value="${comment.id}">
-                                                    <button type="submit" class="btn btn-sm btn-success mt-2">Сохранить</button>
-                                                    <button type="button" class="btn btn-sm btn-secondary mt-2 cancel-edit-btn">Отмена</button>
-                                                </form>
-                                            `;
-                                        }
-                                        if (!data.is_auction_ended) {
-                                            commentHtml += `
-                                                <button class="btn btn-sm btn-primary reply-comment-btn" data-comment-id="${comment.id}">Ответить</button>
-                                                <form method="post" class="reply-comment-form" style="display:none;" data-comment-id="${comment.id}">
-                                                    <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
-                                                    <textarea name="content" rows="3" class="form-control" placeholder="Ваш ответ"></textarea>
-                                                    <input type="hidden" name="comment" value="true">
-                                                    <input type="hidden" name="parent" value="${comment.id}">
-                                                    <button type="submit" class="btn btn-sm btn-primary mt-2">Отправить ответ</button>
-                                                    <button type="button" class="btn btn-sm btn-secondary mt-2 cancel-reply-btn">Отмена</button>
-                                                </form>
-                                            `;
-                                        }
-                                        if (comment.replies_count > 0) {
-                                            commentHtml += `
-                                                <button class="btn btn-sm btn-info show-replies-btn" data-comment-id="${comment.id}" data-replies-count="${comment.replies_count}">
-                                                    Показать ответы (${comment.replies_count})
-                                                </button>
-                                                <div class="replies-container" id="replies-${comment.id}" style="display:none;">
-                                            `;
-                                            comment.replies.forEach(reply => {
-                                                const replyDate = new Date(reply.created_at).toLocaleString();
-                                                commentHtml += `
-                                                    <div class="card mt-2 ms-4" id="comment-${reply.id}">
-                                                        <div class="card-body">
-                                                            <p>${reply.content}</p>
-                                                            <p>Автор: ${reply.username} | ${replyDate}</p>
-                                                `;
-                                                if (reply.can_edit) {
-                                                    commentHtml += `
-                                                        <button class="btn btn-sm btn-warning edit-comment-btn" data-comment-id="${reply.id}">Редактировать</button>
-                                                        <form method="post" style="display:inline;" onsubmit="return confirm('Удалить ответ?');" class="delete-comment-form">
-                                                            <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
-                                                            <input type="hidden" name="delete_comment" value="true">
-                                                            <input type="hidden" name="comment_id" value="${reply.id}">
-                                                            <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
-                                                        </form>
-                                                        <form method="post" class="edit-comment-form" style="display:none;" data-comment-id="${reply.id}">
-                                                            <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
-                                                            <textarea name="content" rows="3" class="form-control">${reply.content}</textarea>
-                                                            <input type="hidden" name="edit_comment" value="true">
-                                                            <input type="hidden" name="comment_id" value="${reply.id}">
-                                                            <button type="submit" class="btn btn-sm btn-success mt-2">Сохранить</button>
-                                                            <button type="button" class="btn btn-sm btn-secondary mt-2 cancel-edit-btn">Отмена</button>
-                                                        </form>
-                                                    `;
-                                                }
-                                                commentHtml += `
-                                                        </div>
-                                                    </div>
-                                                `;
-                                            });
-                                            commentHtml += `
-                                                </div>
-                                            `;
-                                        }
-                                        commentHtml += `
-                                                </div>
-                                            </div>
-                                        `;
-                                        commentsListEl.innerHTML += commentHtml;
-                                    });
-                                } else {
-                                    commentsListEl.innerHTML = '<p>Комментариев пока нет.</p>';
-                                }
-                            }
-
-                            // Удаление форм при завершении аукциона
+                        const timeUntilEl = document.getElementById('time-until');
+                        if (timeUntilEl) {
                             if (data.is_auction_ended) {
-                                document.getElementById('bid-form')?.remove();
-                                document.getElementById('comment-form')?.remove();
+                                timeUntilEl.remove();
                                 if (!document.getElementById('auction-ended-message')) {
                                     const message = document.createElement('p');
                                     message.id = 'auction-ended-message';
                                     message.textContent = 'Аукцион завершен.';
                                     document.querySelector('.col-md-6')?.appendChild(message);
                                 }
+                            } else {
+                                timeUntilEl.textContent = `Время до окончания: ${formatTimeUntil(data.time_until)}`;
                             }
-
-                            restoreUIState();
-                            bindCommentEvents();
                         }
-                    })
-                    .catch(error => console.error('Error updating page data:', error));
-            }
 
-            function bindCommentEvents() {
-                document.querySelectorAll('.edit-comment-btn').forEach(button => {
-                    button.removeEventListener('click', handleEditClick);
-                    button.addEventListener('click', handleEditClick);
-                });
+                        const commentsListEl = document.getElementById('comments-list');
+                        if (commentsListEl) {
+                            commentsListEl.innerHTML = '';
+                            if (data.comments && data.comments.length > 0) {
+                                data.comments.forEach(comment => {
+                                    const date = new Date(comment.created_at).toLocaleString();
+                                    let commentHtml = `
+                                                <div class="card mt-2" id="comment-${comment.id}">
+                                                    <div class="card-body">
+                                                        <p>${comment.content}</p>
+                                                        <p>Автор: ${comment.username} | ${date}</p>
+                                            `;
+                                    if (comment.can_edit) {
+                                        commentHtml += `
+                                                    <button class="btn btn-sm btn-warning edit-comment-btn" data-comment-id="${comment.id}">Редактировать</button>
+                                                    <form method="post" style="display:inline;" onsubmit="return confirm('Удалить комментарий?');" class="delete-comment-form">
+                                                        <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+                                                        <input type="hidden" name="delete_comment" value="true">
+                                                        <input type="hidden" name="comment_id" value="${comment.id}">
+                                                        <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
+                                                    </form>
+                                                    <form method="post" class="edit-comment-form" style="display:none;" data-comment-id="${comment.id}">
+                                                        <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+                                                        <textarea name="content" rows="3" class="form-control">${comment.content}</textarea>
+                                                        <input type="hidden" name="edit_comment" value="true">
+                                                        <input type="hidden" name="comment_id" value="${comment.id}">
+                                                        <button type="submit" class="btn btn-sm btn-success mt-2">Сохранить</button>
+                                                        <button type="button" class="btn btn-sm btn-secondary mt-2 cancel-edit-btn">Отмена</button>
+                                                    </form>
+                                                `;
+                                    }
+                                    if (!data.is_auction_ended) {
+                                        commentHtml += `
+                                                    <button class="btn btn-sm btn-primary reply-comment-btn" data-comment-id="${comment.id}">Ответить</button>
+                                                    <form method="post" class="reply-comment-form" style="display:none;" data-comment-id="${comment.id}">
+                                                        <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+                                                        <textarea name="content" rows="3" class="form-control" placeholder="Ваш ответ"></textarea>
+                                                        <input type="hidden" name="comment" value="true">
+                                                        <input type="hidden" name="parent" value="${comment.id}">
+                                                        <button type="submit" class="btn btn-sm btn-primary mt-2">Отправить ответ</button>
+                                                        <button type="button" class="btn btn-sm btn-secondary mt-2 cancel-reply-btn">Отмена</button>
+                                                    </form>
+                                                `;
+                                    }
+                                    if (comment.replies_count > 0) {
+                                        commentHtml += `
+                                                    <button class="btn btn-sm btn-info show-replies-btn" data-comment-id="${comment.id}" data-replies-count="${comment.replies_count}">
+                                                        Показать ответы (${comment.replies_count})
+                                                    </button>
+                                                    <div class="replies-container" id="replies-${comment.id}" style="display:none;">
+                                                `;
+                                        comment.replies.forEach(reply => {
+                                            const replyDate = new Date(reply.created_at).toLocaleString();
+                                            commentHtml += `
+                                                        <div class="card mt-2 ms-4" id="comment-${reply.id}">
+                                                            <div class="card-body">
+                                                                <p>${reply.content}</p>
+                                                                <p>Автор: ${reply.username} | ${replyDate}</p>
+                                                    `;
+                                            if (reply.can_edit) {
+                                                commentHtml += `
+                                                            <button class="btn btn-sm btn-warning edit-comment-btn" data-comment-id="${reply.id}">Редактировать</button>
+                                                            <form method="post" style="display:inline;" onsubmit="return confirm('Удалить ответ?');" class="delete-comment-form">
+                                                                <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+                                                                <input type="hidden" name="delete_comment" value="true">
+                                                                <input type="hidden" name="comment_id" value="${reply.id}">
+                                                                <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
+                                                            </form>
+                                                            <form method="post" class="edit-comment-form" style="display:none;" data-comment-id="${reply.id}">
+                                                                <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+                                                                <textarea name="content" rows="3" class="form-control">${reply.content}</textarea>
+                                                                <input type="hidden" name="edit_comment" value="true">
+                                                                <input type="hidden" name="comment_id" value="${reply.id}">
+                                                                <button type="submit" class="btn btn-sm btn-success mt-2">Сохранить</button>
+                                                                <button type="button" class="btn btn-sm btn-secondary mt-2 cancel-edit-btn">Отмена</button>
+                                                            </form>
+                                                        `;
+                                            }
+                                            commentHtml += `
+                                                            </div>
+                                                        </div>
+                                                    `;
+                                        });
+                                        commentHtml += `
+                                                    </div>
+                                                `;
+                                    }
+                                    commentHtml += `
+                                                    </div>
+                                                </div>
+                                            `;
+                                    commentsListEl.innerHTML += commentHtml;
+                                });
+                            } else {
+                                commentsListEl.innerHTML = '<p>Комментариев пока нет.</p>';
+                            }
+                        }
 
-                document.querySelectorAll('.cancel-edit-btn').forEach(button => {
-                    button.removeEventListener('click', handleCancelEdit);
-                    button.addEventListener('click', handleCancelEdit);
-                });
+                        if (data.is_auction_ended) {
+                            document.getElementById('bid-form')?.remove();
+                            document.getElementById('comment-form')?.remove();
+                            if (!document.getElementById('auction-ended-message')) {
+                                const message = document.createElement('p');
+                                message.id = 'auction-ended-message';
+                                message.textContent = 'Аукцион завершен.';
+                                document.querySelector('.col-md-6')?.appendChild(message);
+                            }
+                        }
 
-                document.querySelectorAll('.reply-comment-btn').forEach(button => {
-                    button.removeEventListener('click', handleReplyClick);
-                    button.addEventListener('click', handleReplyClick);
-                });
-
-                document.querySelectorAll('.cancel-reply-btn').forEach(button => {
-                    button.removeEventListener('click', handleCancelReply);
-                    button.addEventListener('click', handleCancelReply);
-                });
-
-                document.querySelectorAll('.show-replies-btn').forEach(button => {
-                    button.removeEventListener('click', handleShowReplies);
-                    button.addEventListener('click', handleShowReplies);
-                });
-            }
-
-            function handleEditClick() {
-                const commentId = this.dataset.commentId;
-                const commentCard = document.getElementById(`comment-${commentId}`);
-                const editForm = commentCard.querySelector('.edit-comment-form');
-                const replyForm = commentCard.querySelector('.reply-comment-form');
-                if (editForm) {
-                    editForm.style.display = editForm.style.display === 'none' ? 'block' : 'none';
-                    if (replyForm) {
-                        replyForm.style.display = 'none';
+                        restoreUIState();
+                        bindCommentEvents();
                     }
-                }
-            }
+                })
+                .catch(error => console.error('Error updating page data:', error));
+        }
 
-            function handleCancelEdit() {
-                const form = this.closest('.edit-comment-form');
-                form.style.display = 'none';
-            }
+        function bindCommentEvents() {
+            document.querySelectorAll('.edit-comment-btn').forEach(button => {
+                button.removeEventListener('click', handleEditClick);
+                button.addEventListener('click', handleEditClick);
+            });
 
-            function handleReplyClick() {
-                const commentId = this.dataset.commentId;
-                const commentCard = document.getElementById(`comment-${commentId}`);
-                const replyForm = commentCard.querySelector('.reply-comment-form');
-                const editForm = commentCard.querySelector('.edit-comment-form');
+            document.querySelectorAll('.cancel-edit-btn').forEach(button => {
+                button.removeEventListener('click', handleCancelEdit);
+                button.addEventListener('click', handleCancelEdit);
+            });
+
+            document.querySelectorAll('.reply-comment-btn').forEach(button => {
+                button.removeEventListener('click', handleReplyClick);
+                button.addEventListener('click', handleReplyClick);
+            });
+
+            document.querySelectorAll('.cancel-reply-btn').forEach(button => {
+                button.removeEventListener('click', handleCancelReply);
+                button.addEventListener('click', handleCancelReply);
+            });
+
+            document.querySelectorAll('.show-replies-btn').forEach(button => {
+                button.removeEventListener('click', handleShowReplies);
+                button.addEventListener('click', handleShowReplies);
+            });
+        }
+
+        function handleEditClick() {
+            const commentId = this.dataset.commentId;
+            const commentCard = document.getElementById(`comment-${commentId}`);
+            const editForm = commentCard.querySelector('.edit-comment-form');
+            const replyForm = commentCard.querySelector('.reply-comment-form');
+            if (editForm) {
+                editForm.style.display = editForm.style.display === 'none' ? 'block' : 'none';
                 if (replyForm) {
-                    replyForm.style.display = replyForm.style.display === 'none' ? 'block' : 'none';
-                    if (editForm) {
-                        editForm.style.display = 'none';
-                    }
+                    replyForm.style.display = 'none';
                 }
             }
+        }
 
-            function handleCancelReply() {
-                const form = this.closest('.reply-comment-form');
-                form.style.display = 'none';
-            }
+        function handleCancelEdit() {
+            const form = this.closest('.edit-comment-form');
+            form.style.display = 'none';
+        }
 
-            function handleShowReplies() {
-                const commentId = this.dataset.commentId;
-                const repliesContainer = document.getElementById(`replies-${commentId}`);
-                if (repliesContainer) {
-                    const isHidden = repliesContainer.style.display === 'none';
-                    repliesContainer.style.display = isHidden ? 'block' : 'none';
-                    const repliesCount = this.dataset.repliesCount || this.textContent.match(/\d+/)?.[0] || 0;
-                    this.textContent = isHidden ? `Скрыть ответы` : `Показать ответы (${repliesCount})`;
-                    this.dataset.repliesCount = repliesCount;
+        function handleReplyClick() {
+            const commentId = this.dataset.commentId;
+            const commentCard = document.getElementById(`comment-${commentId}`);
+            const replyForm = commentCard.querySelector('.reply-comment-form');
+            const editForm = commentCard.querySelector('.edit-comment-form');
+            if (replyForm) {
+                replyForm.style.display = replyForm.style.display === 'none' ? 'block' : 'none';
+                if (editForm) {
+                    editForm.style.display = 'none';
                 }
             }
+        }
 
-            if (pageId) {
-                setInterval(updatePageData, updateInterval);
-                updatePageData();
-                bindCommentEvents();
+        function handleCancelReply() {
+            const form = this.closest('.reply-comment-form');
+            form.style.display = 'none';
+        }
+
+        function handleShowReplies() {
+            const commentId = this.dataset.commentId;
+            const repliesContainer = document.getElementById(`replies-${commentId}`);
+            if (repliesContainer) {
+                const isHidden = repliesContainer.style.display === 'none';
+                repliesContainer.style.display = isHidden ? 'block' : 'none';
+                const repliesCount = this.dataset.repliesCount || this.textContent.match(/\d+/)?.[0] || 0;
+                this.textContent = isHidden ? `Скрыть ответы` : `Показать ответы (${repliesCount})`;
+                this.dataset.repliesCount = repliesCount;
             }
-        });
-    </script>
-</body>
+        }
+
+        if (pageId) {
+            setInterval(updatePageData, updateInterval);
+            updatePageData();
+            bindCommentEvents();
+        }
+    });
+</script>
 
 </html>

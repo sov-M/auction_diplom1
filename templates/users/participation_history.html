@@ -3,6 +3,44 @@
 {% extends 'base.html' %}
 {% block page_id %}participation_history{% endblock %}
 {% block content %}
+
+<style>
+    .card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 2px solid #00f7ff;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        box-shadow: 0 5px 20px rgba(0, 247, 255, 0.3);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-10px) rotate(1deg);
+        box-shadow: 0 10px 30px rgba(0, 247, 255, 0.5);
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+
+    .card-body h5 {
+        font-size: 1.6rem;
+        margin-bottom: 0.7rem;
+    }
+
+    .card-body p {
+        margin: 0.5rem 0;
+        color: #cbd5e1;
+    }
+
+    @media (max-width: 600px) {
+        .card-body {
+            padding: 1.5rem;
+        }
+    }
+</style>
+
 <h1>История участия</h1>
 
 <h2>Активные аукционы</h2>

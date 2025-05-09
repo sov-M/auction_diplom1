@@ -3,6 +3,50 @@
 {% extends 'base.html' %}
 
 {% block content %}
+
+<style>
+    .lot-form {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        padding: 2rem;
+        border-radius: 15px;
+        border: 2px solid #00f7ff;
+        box-shadow: 0 5px 20px rgba(0, 247, 255, 0.3);
+        max-width: 700px;
+        margin: 3rem auto;
+    }
+
+    .lot-form p {
+        margin-bottom: 1.5rem;
+    }
+
+    .lot-form label {
+        font-weight: 600;
+        color: #fff;
+        text-shadow: 0 0 5px rgba(0, 247, 255, 0.5);
+    }
+
+    .lot-form .form-control {
+        margin-bottom: 1.5rem;
+    }
+
+    .lot-form .btn {
+        margin-right: 1rem;
+    }
+
+    @media (max-width: 600px) {
+        .lot-form {
+            padding: 1.5rem;
+        }
+
+        .lot-form .btn {
+            display: block;
+            width: 100%;
+            margin: 0.7rem 0;
+        }
+    }
+</style>
+
 <h1>Создать лот</h1>
 <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
