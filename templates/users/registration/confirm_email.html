@@ -1,7 +1,5 @@
 <!-- templates/users/registration/confirm_email.html -->
-
 {% extends 'base.html' %}
-
 {% block content %}
 
 <style>
@@ -14,37 +12,36 @@
         border-radius: 15px;
         border: 2px solid #00f7ff;
         box-shadow: 0 5px 20px rgba(0, 247, 255, 0.3);
+        transition: transform 0.3s ease;
     }
 
-    .auth-container h1,
-    .auth-container h2 {
+    .auth-container:hover {
+        transform: translateY(-5px);
+    }
+
+    .auth-container h1 {
         text-align: center;
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(45deg, #00f7ff, #ff007a);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        border-bottom: 3px solid #00f7ff;
+        padding-bottom: 0.7rem;
         margin-bottom: 2rem;
-    }
-
-    .auth-container form {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-
-    .auth-container .form-control {
-        margin-bottom: 1rem;
-    }
-
-    .auth-container .btn {
-        align-self: center;
-        min-width: 200px;
     }
 
     .auth-container p {
         text-align: center;
         color: #cbd5e1;
+        margin: 1rem 0;
     }
 
     .auth-container a {
         color: #00f7ff;
         text-decoration: none;
+        font-weight: 600;
+        transition: color 0.3s ease, text-shadow 0.3s ease;
     }
 
     .auth-container a:hover {
@@ -54,17 +51,18 @@
 
     @media (max-width: 600px) {
         .auth-container {
-            padding: 1.5rem;
             margin: 1.5rem;
+            padding: 1.5rem;
         }
 
-        .auth-container .btn {
-            width: 100%;
+        .auth-container h1 {
+            font-size: 2rem;
         }
     }
 </style>
 
-<div class="row">
-    <p>Пожалуйста проверьте свою почту чтобы завершить регистрацию</p>
+<div class="auth-container">
+    <h1>Подтверждение email</h1>
+    <p>Пожалуйста, проверьте свою почту, чтобы завершить регистрацию.</p>
 </div>
 {% endblock %}

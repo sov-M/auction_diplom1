@@ -116,6 +116,7 @@
         background: rgba(255, 255, 255, 0.1);
         border: 2px solid #00f7ff;
         color: #e2e8f0;
+        border-radius: 20px;
     }
 
     .btn-success:hover {
@@ -127,6 +128,7 @@
         background: rgba(255, 255, 255, 0.1);
         border: 2px solid #00f7ff;
         color: #e2e8f0;
+        border-radius: 20px;
     }
 
     .btn-primary:hover {
@@ -138,6 +140,7 @@
         background: rgba(255, 255, 255, 0.1);
         border: 2px solid #ff007a;
         color: #e2e8f0;
+        border-radius: 20px;
     }
 
     .btn-warning:hover {
@@ -149,6 +152,7 @@
         background: rgba(255, 255, 255, 0.1);
         border: 2px solid #ff007a;
         color: #e2e8f0;
+        border-radius: 20px;
     }
 
     .btn-danger:hover {
@@ -164,18 +168,18 @@
     #bid-form,
     #auto-bid-form,
     #comment-form {
-        background: rgba(255, 255, 255, 0.1);
+        {% comment %} background: rgba(255, 255, 255, 0.1);
         padding: 1.5rem;
         border-radius: 15px;
         border: 2px solid #00f7ff;
         box-shadow: 0 5px 20px rgba(0, 247, 255, 0.3);
-        margin-bottom: 2rem;
+        margin-bottom: 2rem; {% endcomment %}
     }
 
     .form-control {
         padding: 0.8rem;
         border: 2px solid #00f7ff;
-        border-radius: 10px;
+        border-radius: 20px;
         color: #e2e8f0;
         background: rgba(255, 255, 255, 0.05);
         transition: border-color 0.3s ease, box-shadow 0.3s ease;
@@ -197,6 +201,7 @@
         resize: vertical;
         min-height: 80px;
         max-height: 200px;
+
     }
 
     .modal-content {

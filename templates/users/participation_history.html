@@ -1,22 +1,51 @@
 <!-- templates/users/auctions/participation_history.html -->
-
 {% extends 'base.html' %}
 {% block page_id %}participation_history{% endblock %}
 {% block content %}
 
 <style>
+    .history-container {
+        width: 100%;
+        margin: 3rem auto;
+        padding: 0 1.5rem;
+    }
+
+    .history-container h1,
+    .history-container h2 {
+        text-align: center;
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(45deg, #00f7ff, #ff007a);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        border-bottom: 3px solid #00f7ff;
+        padding-bottom: 0.7rem;
+        margin-bottom: 2rem;
+    }
+
+    .history-container h2 {
+        font-size: 2rem;
+        margin-top: 3rem;
+    }
+
+    .lots-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+
     .card {
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(10px);
         border: 2px solid #00f7ff;
         border-radius: 15px;
-        margin-bottom: 2rem;
         box-shadow: 0 5px 20px rgba(0, 247, 255, 0.3);
         transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
 
     .card:hover {
-        transform: translateY(-10px) rotate(1deg);
+        transform: translateY(-5px);
         box-shadow: 0 10px 30px rgba(0, 247, 255, 0.5);
     }
 
@@ -26,50 +55,106 @@
 
     .card-body h5 {
         font-size: 1.6rem;
-        margin-bottom: 0.7rem;
+        color: #e2e8f0;
+        margin-bottom: 1rem;
+        text-shadow: 0 0 5px rgba(0, 247, 255, 0.3);
     }
 
     .card-body p {
         margin: 0.5rem 0;
         color: #cbd5e1;
+        font-size: 1rem;
     }
 
-    @media (max-width: 600px) {
+    .card-body .btn {
+        padding: 0.9rem 2rem;
+        border-radius: 50px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        background: linear-gradient(45deg, rgba(139, 53, 106, 0.8), rgba(59, 126, 89, 0.8));
+        border: 2px solid #00f7ff;
+        text-shadow: 0 0 5px rgba(0, 247, 255, 0.5);
+        color: #fff;
+        text-align: center;
+        transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        box-shadow: 0 5px 15px rgba(0, 247, 255, 0.4);
+        display: block;
+        width: fit-content;
+        margin: 1rem auto 0;
+    }
+
+    .card-body .btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(255, 0, 122, 0.5);
+        border-color: #ff007a;
+        background: linear-gradient(45deg, rgba(139, 53, 106, 0.9), rgba(59, 126, 89, 0.9));
+    }
+
+    @media (max-width: 768px) {
+        .history-container {
+            margin: 1.5rem auto;
+            padding: 0 1rem;
+        }
+
+        .history-container h1 {
+            font-size: 2rem;
+        }
+
+        .history-container h2 {
+            font-size: 1.8rem;
+        }
+
         .card-body {
             padding: 1.5rem;
+        }
+
+        .card-body h5 {
+            font-size: 1.4rem;
+        }
+
+        .card-body .btn {
+            width: 100%;
+            padding: 0.7rem;
+            font-size: 0.9rem;
         }
     }
 </style>
 
-<h1>История участия</h1>
+<div class="history-container">
+    <h1>История участия</h1>
 
-<h2>Активные аукционы</h2>
-<div id="active-lots">
-    {% for lot in active_lots %}
-    <div class="card">
-        <div class="card-body">
-            <h5>{{ lot.title }}</h5>
-            <p>Текущая цена: {{ lot.current_price|default:"Нет ставок" }}</p>
-            <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
+    <h2>Активные аукционы</h2>
+    <div id="active-lots" class="lots-grid">
+        {% for lot in active_lots %}
+        <div class="card">
+            <div class="card-body">
+                <h5>{{ lot.title }}</h5>
+                <p>Текущая цена: {{ lot.current_price|default:"Нет ставок" }}</p>
+                <p>Время до окончания: {% if lot.is_auction_ended %} Завершён {% else %}{{ lot.auction_end|timeuntil }}{% endif %}</p>
+                <a href="{% url 'lot_detail' lot.pk %}" class="btn">Подробнее</a>
+            </div>
         </div>
+        {% empty %}
+        <p>Нет активных аукционов.</p>
+        {% endfor %}
     </div>
-    {% empty %}
-    <p>Нет активных аукционов.</p>
-    {% endfor %}
-</div>
 
-<h2>Все лоты, в которых вы участвовали</h2>
-<div id="participated-lots">
-    {% for lot in participated_lots %}
-    <div class="card">
-        <div class="card-body">
-            <h5>{{ lot.title }}</h5>
-            <p>Статус: {% if lot.is_active %}Активен{% else %}Завершен{% endif %}</p>
-            <a href="{% url 'lot_detail' lot.pk %}" class="btn btn-primary">Подробнее</a>
+    <h2>Все лоты, в которых вы участвовали</h2>
+    <div id="participated-lots" class="lots-grid">
+        {% for lot in participated_lots %}
+        <div class="card">
+            <div class="card-body">
+                <h5>{{ lot.title }}</h5>
+                <p>Статус: {% if lot.is_auction_ended %}Завершён{% else %}Активен{% endif %}</p>
+                <p>Текущая цена: {{ lot.current_price|default:"Нет ставок" }}</p>
+                <p>Время до окончания: {% if lot.is_auction_ended %} Завершён {% else %}{{ lot.auction_end|timeuntil }}{% endif %}</p>
+                <a href="{% url 'lot_detail' lot.pk %}" class="btn">Подробнее</a>
+            </div>
         </div>
+        {% empty %}
+        <p>Вы не участвовали в аукционах.</p>
+        {% endfor %}
     </div>
-    {% empty %}
-    <p>Вы не участвовали в аукционах.</p>
-    {% endfor %}
 </div>
 {% endblock %}

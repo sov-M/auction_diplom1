@@ -325,7 +325,7 @@
             <div class="lot-content">
                 <h3>{{ lot.title }}</h3>
                 <p>Текущая цена: {% if lot.current_price %}{{ lot.current_price }} руб.{% else %}Нет ставок{% endif %}</p>
-                <p>Окончание аукциона: {{ lot.auction_end }}</p>
+                <p>Окончание аукциона: {{ lot.auction_end|timeuntil }}</p>
                 <p>Статус: {% if lot.is_auction_ended %}Завершён{% else %}Активен{% endif %}</p>
             </div>
         </a>
@@ -346,7 +346,7 @@
             <div class="lot-content">
                 <h3>{{ lot.title }}</h3>
                 <p>Текущая цена: {% if lot.current_price %}{{ lot.current_price }} руб.{% else %}Нет ставок{% endif %}</p>
-                <p>Окончание аукциона: {{ lot.auction_end }}</p>
+                <p>Окончание аукциона: {{ lot.auction_end|timeuntil }}</p>
                 <p>Статус: {% if lot.is_auction_ended %}Завершён{% else %}Активен{% endif %}</p>
             </div>
         </a>
@@ -367,7 +367,7 @@
             <div class="lot-content">
                 <h3>{{ lot.title }}</h3>
                 <p>Текущая цена: {% if lot.current_price %}{{ lot.current_price }} руб.{% else %}Нет ставок{% endif %}</p>
-                <p>Окончание аукциона: {{ lot.auction_end }}</p>
+                <p>Окончание аукциона: {{ lot.auction_end|timeuntil }}</p>
                 <p>Статус: {% if lot.is_auction_ended %}Завершён{% else %}Активен{% endif %}</p>
             </div>
         </a>

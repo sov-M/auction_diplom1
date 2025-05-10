@@ -1,13 +1,34 @@
 <!-- templates/users/user_lots.html -->
 {% extends 'base.html' %}
 {% block page_id %}user_lots{% endblock %}
-
-
-
 {% block content %}
 
 <style>
     .lots-container {
+        width: 100%;
+        margin: 3rem auto;
+        padding: 0 1.5rem;
+    }
+
+    .lots-container h1,
+    .lots-container h2 {
+        text-align: center;
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(45deg, #00f7ff, #ff007a);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        border-bottom: 3px solid #00f7ff;
+        padding-bottom: 0.7rem;
+        margin-bottom: 2rem;
+    }
+
+    .lots-container h2 {
+        font-size: 2rem;
+        margin-top: 3rem;
+    }
+
+    .lots-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
         gap: 2rem;
@@ -22,22 +43,52 @@
         padding: 2rem;
         box-shadow: 0 5px 20px rgba(0, 247, 255, 0.3);
         transition: transform 0.3s ease, box-shadow 0.3s ease;
+        display: flex;
+        flex-direction: column;
     }
 
     .lot-card:hover {
-        transform: translateY(-10px) rotate(1deg);
+        transform: translateY(-5px);
         box-shadow: 0 10px 30px rgba(0, 247, 255, 0.5);
+    }
+
+    .lot-card .lot-content {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
     }
 
     .lot-card .lot-info {
         flex: 1;
-        padding-right: 1.5rem;
+        min-width: 200px;
+    }
+
+    .lot-card .lot-info h5 {
+        font-size: 1.6rem;
+        color: #e2e8f0;
+        margin-bottom: 1rem;
+        text-shadow: 0 0 5px rgba(0, 247, 255, 0.3);
+    }
+
+    .lot-card .lot-info p,
+    .lot-card .lot-info h6 {
+        margin: 0.5rem 0;
+        color: #cbd5e1;
+        font-size: 1rem;
     }
 
     .lot-card .lot-stats {
         flex: 1;
         border-left: 3px solid #ff007a;
         padding-left: 1.5rem;
+        min-width: 200px;
+    }
+
+    .lot-card .lot-stats h4 {
+        font-size: 1.4rem;
+        color: #e2e8f0;
+        margin-bottom: 1rem;
+        text-shadow: 0 0 5px rgba(0, 247, 255, 0.3);
     }
 
     .lot-card .lot-stats ul {
@@ -48,21 +99,60 @@
     .lot-card .lot-stats ul li {
         margin: 0.5rem 0;
         color: #cbd5e1;
+        font-size: 1rem;
     }
 
     .lot-card .lot-actions {
         margin-top: 1.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: center;
+    }
+
+    .lot-card .lot-actions .btn {
+        padding: 0.9rem 2rem;
+        border-radius: 50px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        background: linear-gradient(45deg, rgba(139, 53, 106, 0.8), rgba(59, 126, 89, 0.8));
+        border: 2px solid #00f7ff;
+        text-shadow: 0 0 5px rgba(0, 247, 255, 0.5);
+        color: #fff;
         text-align: center;
+        transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        box-shadow: 0 5px 15px rgba(0, 247, 255, 0.4);
+        min-width: 150px;
+    }
+
+    .lot-card .lot-actions .btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(255, 0, 122, 0.5);
+        border-color: #ff007a;
+        background: linear-gradient(45deg, rgba(139, 53, 106, 0.9), rgba(59, 126, 89, 0.9));
     }
 
     .lot-card .lot-actions form {
         display: inline-block;
-        margin: 0 0.7rem;
     }
 
     @media (max-width: 768px) {
-        .lot-card {
-            display: block;
+        .lots-container {
+            margin: 1.5rem auto;
+            padding: 0 1rem;
+        }
+
+        .lots-container h1 {
+            font-size: 2rem;
+        }
+
+        .lots-container h2 {
+            font-size: 1.8rem;
+        }
+
+        .lot-card .lot-content {
+            flex-direction: column;
         }
 
         .lot-card .lot-stats {
@@ -73,175 +163,87 @@
         }
 
         .lot-card .lot-actions .btn {
-            display: block;
             width: 100%;
-            margin: 0.7rem 0;
+            margin: 0.5rem 0;
         }
     }
 </style>
 
-<h1>Мои лоты</h1>
+<div class="lots-container">
+    <h1>Мои лоты</h1>
 
-<h2>Активные лоты</h2>
-<div id="active-lots" class="lots-container">
-    {% for entry in active_lots %}
-    <div class="lot-card">
-        <div style="display: flex;">
-            <div class="lot-info">
-                <h5>{{ entry.lot.title }}</h5>
-                <p>Текущая цена: {{ entry.lot.current_price|default:"Нет ставок" }} руб.</p>
+    <h2>Активные лоты</h2>
+    <div id="active-lots" class="lots-grid">
+        {% for entry in active_lots %}
+        <div class="lot-card">
+            <div class="lot-content">
+                <div class="lot-info">
+                    <h5>{{ entry.lot.title }}</h5>
+                    <p>Текущая цена: {{ entry.lot.current_price|default:"Нет ставок" }} руб.</p>
+                </div>
+                <div class="lot-stats">
+                    <h4>Статистика</h4>
+                    <ul>
+                        <li>Просмотры: {{ entry.stats.views }}</li>
+                        <li>Ставки: {{ entry.stats.bids_count }}</li>
+                        <li>Уникальных участников: {{ entry.stats.unique_bidders_count }}</li>
+                        <li>Комментарии: {{ entry.stats.comments_count }}</li>
+                    </ul>
+                </div>
             </div>
-            <div class="lot-stats">
-                <h4>Статистика</h4>
-                <ul>
-                    <li>
-                        <p>Просмотры: {{ entry.stats.views }}</p>
-                    </li>
-                    <li>
-                        <p>Ставки: {{ entry.stats.bids_count }}</p>
-                    </li>
-                    <li>
-                        <p>Уникальных участников: {{ entry.stats.unique_bidders_count }}</p>
-                    </li>
-                    <li>
-                        <p>Комментарии: {{ entry.stats.comments_count }}</p>
-                    </li>
-                </ul>
+            <div class="lot-actions">
+                <a href="{% url 'lot_detail' entry.lot.pk %}" class="btn">Подробнее</a>
+                {% if not entry.lot.has_bids %}
+                <a href="{% url 'edit_lot' entry.lot.pk %}" class="btn">Редактировать</a>
+                <form method="post" class="lot-actions-form"
+                    onsubmit="return confirm('Вы уверены, что хотите отменить лот?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="cancel_lot" value="true">
+                    <input type="hidden" name="lot_id" value="{{ entry.lot.pk }}">
+                    <button type="submit" class="btn">Отменить лот</button>
+                </form>
+                {% endif %}
             </div>
         </div>
-        <div class="lot-actions">
-            <a href="{% url 'lot_detail' entry.lot.pk %}" class="btn btn-primary">Подробнее</a>
-            {% if not entry.lot.has_bids %}
-            <a href="{% url 'edit_lot' entry.lot.pk %}" class="btn btn-warning">Редактировать</a>
-            <form method="post" class="lot-actions-form"
-                onsubmit="return confirm('Вы уверены, что хотите отменить лот?');">
-                {% csrf_token %}
-                <input type="hidden" name="cancel_lot" value="true">
-                <input type="hidden" name="lot_id" value="{{ entry.lot.pk }}">
-                <button type="submit" class="btn btn-danger">Отменить лот</button>
-            </form>
-            {% endif %}
-        </div>
+        {% empty %}
+        <p>Нет активных лотов.</p>
+        {% endfor %}
     </div>
-    {% empty %}
-    <p>Нет активных лотов.</p>
-    {% endfor %}
-</div>
 
-<h2>Завершенные лоты</h2>
-<div id="finished-lots" class="lots-container">
-    {% for entry in finished_lots %}
-    <div class="lot-card">
-        <div style="display: flex;">
-            <div class="lot-info">
-                <h5>{{ entry.lot.title }}</h5>
-                <p>Финальная цена: {{ entry.lot.current_price|default:"Нет ставок" }} руб.</p>
-                <h6>Топ-3 участников:</h6>
-                <ul>
-                    {% for bidder in entry.unique_bidders %}
-                    <li>{{ bidder.user__username }} ({{ bidder.user__email }}) - {{ bidder.max_amount }} руб.</li>
-                    {% empty %}
-                    <li>Ставок не было</li>
-                    {% endfor %}
-                </ul>
+    <h2>Завершенные лоты</h2>
+    <div id="finished-lots" class="lots-grid">
+        {% for entry in finished_lots %}
+        <div class="lot-card">
+            <div class="lot-content">
+                <div class="lot-info">
+                    <h5>{{ entry.lot.title }}</h5>
+                    <p>Финальная цена: {{ entry.lot.current_price|default:"Нет ставок" }} руб.</p>
+                    <h6>Топ-3 участников:</h6>
+                    <ul>
+                        {% for bidder in entry.unique_bidders %}
+                        <li>{{ bidder.user__username }} ({{ bidder.user__email }}) - {{ bidder.max_amount }} руб.</li>
+                        {% empty %}
+                        <li>Ставок не было</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="lot-stats">
+                    <h4>Статистика</h4>
+                    <ul>
+                        <li>Просмотры: {{ entry.stats.views }}</li>
+                        <li>Ставки: {{ entry.stats.bids_count }}</li>
+                        <li>Уникальных участников: {{ entry.stats.unique_bidders_count }}</li>
+                        <li>Комментарии: {{ entry.stats.comments_count }}</li>
+                    </ul>
+                </div>
             </div>
-            <div class="lot-stats">
-                <h4>Статистика</h4>
-                <ul>
-                    <li>
-                        <p>Просмотры: {{ entry.stats.views }}</p>
-                    </li>
-                    <li>
-                        <p>Ставки: {{ entry.stats.bids_count }}</p>
-                    </li>
-                    <li>
-                        <p>Уникальных участников: {{ entry.stats.unique_bidders_count }}</p>
-                    </li>
-                    <li>
-                        <p>Комментарии: {{ entry.stats.comments_count }}</p>
-                    </li>
-                </ul>
+            <div class="lot-actions">
+                <a href="{% url 'lot_detail' entry.lot.pk %}" class="btn">Подробнее</a>
             </div>
         </div>
-        <div class="lot-actions">
-            <a href="{% url 'lot_detail' entry.lot.pk %}" class="btn btn-primary">Подробнее</a>
-        </div>
+        {% empty %}
+        <p>Нет завершенных лотов.</p>
+        {% endfor %}
     </div>
-    {% empty %}
-    <p>Нет завершенных лотов.</p>
-    {% endfor %}
 </div>
-
-<style>
-    /* Контейнер для лотов */
-    .lots-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-        justify-content: space-between;
-        margin: 0 -10px;
-        /* Компенсация для padding карточек */
-    }
-
-    /* Карточка лота */
-    .lot-card {
-        flex: 0 1 calc(50% - 20px);
-        /* Два лота в строке */
-        border: 2px solid #333;
-        /* Явная рамка */
-        border-radius: 8px;
-        padding: 15px;
-        display: flex;
-        flex-direction: column;
-        /* Внутренние элементы в колонку */
-        box-sizing: border-box;
-        min-width: 300px;
-        max-width: calc(50% - 20px);
-        /* Ограничение ширины */
-        background-color: #f9f9f9;
-        /* Фон для видимости */
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    /* Левая часть (информация) */
-    .lot-info {
-        flex: 1;
-        padding-right: 10px;
-    }
-
-    /* Правая часть (статистика) */
-    .lot-stats {
-        flex: 1;
-        border-left: 2px solid #666;
-        /* Разделитель */
-        padding-left: 10px;
-    }
-
-    /* Контейнер для действий */
-    .lot-actions {
-        margin-top: 15px;
-        text-align: center;
-        width: 100%;
-    }
-
-    .lot-actions form {
-        display: inline-block;
-    }
-
-    /* Адаптивность */
-    @media (max-width: 768px) {
-        .lot-card {
-            flex: 0 1 100%;
-            /* Один лот в строке */
-            max-width: 100%;
-        }
-    }
-
-    /* Для отладки */
-    .lots-container,
-    .lot-card {
-        outline: 1px dashed red;
-        /* Временная обводка для проверки */
-    }
-</style>
 {% endblock %}

@@ -86,55 +86,6 @@
             background: linear-gradient(45deg, #ff007a, #00f7ff);
         }
 
-        .btn-primary {
-            background: linear-gradient(45deg, #1e40af, #3b82f6);
-        }
-
-        .btn-primary:hover {
-            background: linear-gradient(45deg, #3b82f6, #1e40af);
-        }
-
-        .btn-success {
-            background: linear-gradient(45deg, #22c55e, #86efac);
-        }
-
-        .btn-success:hover {
-            background: linear-gradient(45deg, #86efac, #22c55e);
-        }
-
-        .btn-secondary {
-            background: linear-gradient(45deg, #6b7280, #9ca3af);
-        }
-
-        .btn-secondary:hover {
-            background: linear-gradient(45deg, #9ca3af, #6b7280);
-        }
-
-        .btn-danger {
-            background: linear-gradient(45deg, #ef4444, #f87171);
-        }
-
-        .btn-danger:hover {
-            background: linear-gradient(45deg, #f87171, #ef4444);
-        }
-
-        .btn-warning {
-            background: linear-gradient(45deg, #f59e0b, #fbbf24);
-            color: #1e3a8a;
-        }
-
-        .btn-warning:hover {
-            background: linear-gradient(45deg, #fbbf24, #f59e0b);
-        }
-
-        .btn-info {
-            background: linear-gradient(45deg, #06b6d4, #22d3ee);
-        }
-
-        .btn-info:hover {
-            background: linear-gradient(45deg, #22d3ee, #06b6d4);
-        }
-
         .btn-link {
             background: none;
             color: #00f7ff;
@@ -149,6 +100,28 @@
             text-decoration: underline;
         }
 
+        .btn-login {
+            background: linear-gradient(45deg, rgba(139, 53, 106, 0.8), rgba(59, 126, 89, 0.8));
+            backdrop-filter: blur(5px);
+            color: #e2e8f0;
+            padding: 0.7rem 1.8rem;
+            font-size: 1rem;
+            text-shadow: 0 0 5px rgba(0, 247, 255, 0.5);
+            box-shadow: 0 5px 15px rgba(0, 247, 255, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            border: 2px solid #00f7ff;
+        }
+
+        
+        .btn-login:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255, 0, 122, 0.5);
+            border-color: #ff007a;
+            background: linear-gradient(45deg, rgba(139, 53, 106, 0.9), rgba(59, 126, 89, 0.9));
+        }
+
+
+        
         /* Стили для форм */
         form {
             margin: 1.5rem 0;
@@ -175,20 +148,6 @@
             resize: vertical;
             min-height: 100px;
         }
-
-        /* Стили для фильтров (заглушка, если фильтры используют кастомные классы) */
-        /* Если фильтры имеют классы вроде .filter, .filter-form, добавьте их стили здесь */
-        /* Например:
-.filter {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid #00f7ff;
-    padding: 0.5rem;
-}
-.filter select, .filter input {
-    background: transparent;
-    border-color: #00f7ff;
-}
-*/
 
         /* Стили для навигации */
         .navbar {
@@ -384,6 +343,11 @@
                 font-size: 0.9rem;
             }
 
+            .btn-login {
+                padding: 0.6rem 1.5rem;
+                font-size: 0.9rem;
+            }
+
             .navbar {
                 flex-direction: column;
                 align-items: flex-start;
@@ -430,7 +394,7 @@
                 <a href="{% url 'profile' %}">Профиль</a>
                 <a href="{% url 'create_lot' %}">Создать лот</a>
                 <a href="{% url 'user_lots' %}">Мои лоты</a>
-                <a href="{% url 'participation_history' %}">История участия</a>
+                <a href="{% url 'participation_history'%}">История участия</a>
                 <a href="{% url 'win_history' %}">Выигранные</a>
                 <a href="{% url 'admin:index' %}">Админ-панель</a>
                 <a href="{% url 'password_change' %}">Сбросить пароль</a>
@@ -454,7 +418,7 @@
                 </form>
             </div>
             {% else %}
-            <a href="{% url 'login' %}" class="btn btn-primary">Войти</a>
+            <a href="{% url 'login' %}" class="btn btn-login">Войти</a>
             {% endif %}
         </div>
     </nav>
@@ -469,7 +433,6 @@
 
     {% block content %}
     {% endblock %}
-
 
 </body>
 <script>

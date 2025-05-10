@@ -1,19 +1,107 @@
 <!-- templates/users/profile.html -->
-
 {% extends 'base.html' %}
-
 {% block content %}
 
 <style>
-    .profile-stats ul {
-        list-style: none;
-        padding: 0;
-        margin: 1.5rem 0;
+    .profile-container {
+        width: 100%;
+        margin: 3rem auto;
+        padding: 0 1.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        justify-content: space-between;
+    }
+
+    .profile-header {
+        flex: 1 1 100%;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .profile-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(45deg, #00f7ff, #ff007a);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+    }
+
+    .profile-header p {
+        color: #cbd5e1;
+        font-size: 0.9rem;
+        text-transform: lowercase;
+    }
+
+    .profile-actions {
+        flex: 1 1 300px;
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(10px);
         border-radius: 15px;
         border: 2px solid #00f7ff;
         padding: 1.5rem;
+        box-shadow: 0 5px 20px rgba(0, 247, 255, 0.3);
+    }
+
+    .profile-actions h2 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        background: linear-gradient(45deg, #00f7ff, #ff007a);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+
+    .profile-actions .btn {
+        display: block;
+        padding: 0.9rem 2rem;
+        border-radius: 50px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        background: linear-gradient(45deg, rgba(139, 53, 106, 0.8), rgba(59, 126, 89, 0.8));
+        border: 2px solid #00f7ff;
+        text-shadow: 0 0 5px rgba(0, 247, 255, 0.5);
+        color: #fff;
+        text-align: center;
+        margin: 0.7rem 0;
+        transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        box-shadow: 0 5px 15px rgba(0, 247, 255, 0.4);
+    }
+
+    .profile-actions .btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(255, 0, 122, 0.5);
+        border-color: #ff007a;
+        background: linear-gradient(45deg, rgba(139, 53, 106, 0.9), rgba(59, 126, 89, 0.9));
+    }
+
+    .profile-stats {
+        flex: 1 1 400px;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        border: 2px solid #00f7ff;
+        padding: 1.5rem;
+        box-shadow: 0 5px 20px rgba(0, 247, 255, 0.3);
+    }
+
+    .profile-stats h2 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        background: linear-gradient(45deg, #00f7ff, #ff007a);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+
+    .profile-stats ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
     }
 
     .profile-stats ul li {
@@ -25,6 +113,7 @@
 
     .profile-stats ul li:hover {
         color: #00f7ff;
+        text-shadow: 0 0 5px rgba(0, 247, 255, 0.5);
     }
 
     .profile-stats ul ul {
@@ -38,57 +127,84 @@
         color: #cbd5e1;
     }
 
-    .profile-actions {
-        margin-top: 2rem;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
+    @media (max-width: 992px) {
+        .profile-container {
+            flex-direction: column;
+            align-items: center;
+        }
 
-    .profile-actions p {
-        flex: 1 1 100%;
-    }
-
-    .profile-actions .btn {
-        flex: 1 1 auto;
+        .profile-actions,
+        .profile-stats {
+            flex: 1 1 100%;
+            max-width: 600px;
+        }
     }
 
     @media (max-width: 600px) {
+        .profile-container {
+            margin: 1.5rem auto;
+            padding: 0 1rem;
+        }
+
+        .profile-header h1 {
+            font-size: 2rem;
+        }
+
+        .profile-header p {
+            font-size: 0.8rem;
+        }
+
+        .profile-actions h2,
+        .profile-stats h2 {
+            font-size: 1.6rem;
+        }
+
+        .profile-actions .btn {
+            padding: 0.7rem;
+            font-size: 0.9rem;
+        }
+
         .profile-stats ul li {
             font-size: 1rem;
         }
 
-        .profile-actions .btn {
-            flex: 1 1 100%;
-            text-align: center;
+        .profile-stats ul ul {
+            margin-left: 1rem;
+            padding-left: 1rem;
         }
     }
 </style>
 
-<h1>Профиль: {{ user.username }}</h1>
-<p>Email: {{ user.email }}</p>
+<div class="profile-container">
+    <div class="profile-header">
+        <h1>{{ user.username }}</h1>
+        <p>{{ user.email }}</p>
+    </div>
 
-<h2>Статистика</h2>
-<ul>
-    <li>Всего создано лотов: {{ stats.total_lots }}</li>
-    <ul>
-        <li>Активных лотов: {{ stats.active_lots }}</li>
-        <li>Завершенных лотов: {{ stats.finished_lots }}</li>
-    </ul>
-    <li>Участвовал в лотах: {{ stats.participated_lots }}</li>
-    <ul>
-        <li>Потрачено денег: {{ stats.total_spent|floatformat:2 }} руб.</li>
-        <li>Сделано ставок: {{ stats.total_bids }}</li>
-        <li>Выиграно лотов: {{ stats.won_lots }}</li>
-    </ul>
-    <li>Оставлено комментариев: {{ stats.total_comments }}</li>
-</ul>
+    <div class="profile-actions">
+        <h2>Действия</h2>
+        <a href="{% url 'password_change' %}" class="btn">Сменить пароль</a>
+        <a href="{% url 'participation_history' %}" class="btn">История участия</a>
+        <a href="{% url 'win_history' %}" class="btn">Выигранные и топ-3 лоты</a>
+        <a href="{% url 'user_lots' %}" class="btn">Мои лоты</a>
+    </div>
 
-<h2>Сменить пароль</h2>
-<p><a href="{% url 'password_change' %}" class="btn btn-secondary">Сменить пароль</a></p>
-
-<h2>Мои действия</h2>
-<p><a href="{% url 'participation_history' %}" class="btn btn-info">История участия</a></p>
-<p><a href="{% url 'win_history' %}" class="btn btn-info">Выигранные и топ-3 лоты</a></p>
-<p><a href="{% url 'user_lots' %}" class="btn btn-info">Мои лоты</a></p>
+    <div class="profile-stats">
+        <h2>Статистика</h2>
+        <ul>
+            <li>Всего создано лотов: {{ stats.total_lots }}</li>
+            <ul>
+                <li>Активных лотов: {{ stats.active_lots }}</li>
+                <li>Завершенных лотов: {{ stats.finished_lots }}</li>
+            </ul>
+            <li>Участвовал в лотах: {{ stats.participated_lots }}</li>
+            <ul>
+                <li>Потрачено денег: {{ stats.total_spent|floatformat:2 }} руб.</li>
+                <li>Сделано ставок: {{ stats.total_bids }}</li>
+                <li>Выиграно лотов: {{ stats.won_lots }}</li>
+            </ul>
+            <li>Оставлено комментариев: {{ stats.total_comments }}</li>
+        </ul>
+    </div>
+</div>
 {% endblock %}

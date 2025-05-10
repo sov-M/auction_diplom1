@@ -1,10 +1,9 @@
 <!-- templates/users/registration/login.html -->
-
 {% extends 'base.html' %}
 
 {% block content %}
-
 <style>
+    /* Стили для страниц авторизации и регистрации */
     .auth-container {
         max-width: 600px;
         margin: 3rem auto;
@@ -14,11 +13,22 @@
         border-radius: 15px;
         border: 2px solid #00f7ff;
         box-shadow: 0 5px 20px rgba(0, 247, 255, 0.3);
+        transition: transform 0.3s ease;
     }
 
-    .auth-container h1,
-    .auth-container h2 {
+    .auth-container:hover {
+        transform: translateY(-5px);
+    }
+
+    .auth-container h1 {
         text-align: center;
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(45deg, #00f7ff, #ff007a);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        border-bottom: 3px solid #00f7ff;
+        padding-bottom: 0.7rem;
         margin-bottom: 2rem;
     }
 
@@ -28,23 +38,85 @@
         gap: 1.5rem;
     }
 
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-group label {
+        color: #e2e8f0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        text-shadow: 0 0 5px rgba(0, 247, 255, 0.3);
+    }
+
     .auth-container .form-control {
-        margin-bottom: 1rem;
+        padding: 0.9rem;
+        border: 2px solid #00f7ff;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        color: #e2e8f0;
+        font-size: 1rem;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .auth-container .form-control:focus {
+        border-color: #ff007a;
+        box-shadow: 0 0 10px rgba(255, 0, 122, 0.5);
+        outline: none;
+    }
+
+    .auth-container .form-control::placeholder {
+        color: #cbd5e1;
     }
 
     .auth-container .btn {
         align-self: center;
+        padding: 0.9rem 2rem;
+        border-radius: 50px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        background: linear-gradient(45deg, #00f7ff, #ff007a);
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        box-shadow: 0 5px 15px rgba(0, 247, 255, 0.4);
         min-width: 200px;
+    }
+
+    .auth-container .btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0, 247, 255, 0.6);
+        background: linear-gradient(45deg, #ff007a, #00f7ff);
+    }
+
+    .auth-container .btn-login {
+        background: linear-gradient(45deg, rgba(139, 53, 106, 0.8), rgba(59, 126, 89, 0.8));
+        border: 2px solid #00f7ff;
+        text-shadow: 0 0 5px rgba(0, 247, 255, 0.5);
+    }
+
+    .auth-container .btn-login:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(255, 0, 122, 0.5);
+        border-color: #ff007a;
+        background: linear-gradient(45deg, rgba(139, 53, 106, 0.9), rgba(59, 126, 89, 0.9));
     }
 
     .auth-container p {
         text-align: center;
         color: #cbd5e1;
+        margin-top: 1.5rem;
     }
 
     .auth-container a {
         color: #00f7ff;
         text-decoration: none;
+        font-weight: 600;
+        transition: color 0.3s ease, text-shadow 0.3s ease;
     }
 
     .auth-container a:hover {
@@ -52,30 +124,78 @@
         text-shadow: 0 0 10px rgba(255, 0, 122, 0.5);
     }
 
+    .alert-danger {
+        padding: 1.2rem;
+        margin-bottom: 1.5rem;
+        border-radius: 15px;
+        background: rgba(239, 68, 68, 0.2);
+        border: 2px solid #ef4444;
+        color: #e2e8f0;
+        text-align: center;
+    }
+
+    .alert-danger p {
+        margin: 0.5rem 0;
+    }
+
     @media (max-width: 600px) {
         .auth-container {
-            padding: 1.5rem;
             margin: 1.5rem;
+            padding: 1.5rem;
+        }
+
+        .auth-container h1 {
+            font-size: 2rem;
         }
 
         .auth-container .btn {
             width: 100%;
+            padding: 0.7rem;
+            font-size: 0.9rem;
+        }
+
+        .form-group label {
+            font-size: 1rem;
+        }
+
+        .auth-container .form-control {
+            padding: 0.7rem;
+            font-size: 0.9rem;
         }
     }
 </style>
 
-<h1>Login</h1>
-<hr>
+<div class="auth-container">
+    <h1>Вход</h1>
+    <hr>
 
-{% if form.errors %}
-<p>{{ form.errors.error }}</p>
-{% endif %}
+    {% if form.errors %}
+    <div class="alert alert-danger">
+        {% for field in form %}
+        {% for error in field.errors %}
+        <p>{{ error }}</p>
+        {% endfor %}
+        {% endfor %}
+        {% for error in form.non_field_errors %}
+        <p>{{ error }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
 
-<form action="{% url 'login' %}" method="post">
-    {{ form }}
-    {% csrf_token %}
-    <button type="submit" class="btn btn-success">submit</button>
-</form>
+    <form action="{% url 'login' %}" method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="{{ form.username.id_for_label }}">Имя пользователя:</label>
+            {{ form.username }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.password.id_for_label }}">Пароль:</label>
+            {{ form.password }}
+        </div>
+        <button type="submit" class="btn btn-login">Войти</button>
+    </form>
 
-<a href="{% url 'password_reset' %}">Forgot password?</a>
+    <p><a href="{% url 'register' %}">Нет аккаунта?</a></p>
+    <p><a href="{% url 'password_reset' %}">Забыли пароль?</a></p>
+</div>
 {% endblock %}
