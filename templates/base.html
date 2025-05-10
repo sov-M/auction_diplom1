@@ -8,8 +8,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="icon" href="{% static 'main/favicon.ico' %}">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
     <title>Аукционы</title>
 
     <style>
@@ -489,7 +491,7 @@
             });
         }
 
-        // Существующий код для обновления страницы
+        // Код для обновления страницы только для lot_detail
         const pageId = document.body.dataset.page;
         const updateInterval = 5000;
         let lastData = null;
@@ -503,10 +505,18 @@
 
         function formatTimeUntil(seconds) {
             if (seconds <= 0) return '';
-            const hours = Math.floor(seconds / 3600);
+            const days = Math.floor(seconds / (24 * 3600));
+            const hours = Math.floor((seconds % (24 * 3600)) / 3600);
             const minutes = Math.floor((seconds % 3600) / 60);
-            if (hours >= 1) return `${hours} ч`;
-            return `${minutes} мин`;
+            let result = '';
+            if (days > 0) {
+                result += `${days} д `;
+            }
+            if (hours > 0 || days > 0) {
+                result += `${hours} ч `;
+            }
+            result += `${minutes} мин`;
+            return result.trim();
         }
 
         function saveUIState() {
@@ -582,6 +592,8 @@
         }
 
         function updatePageData() {
+            if (pageId !== 'lot_detail') return;
+
             saveUIState();
 
             fetch(window.location.href, {
@@ -589,159 +601,156 @@
             })
                 .then(response => response.json())
                 .then(data => {
-                    console.log('Received data:', data);
                     if (JSON.stringify(data) === JSON.stringify(lastData)) return;
                     lastData = data;
 
-                    if (pageId === 'lot_detail') {
-                        const currentPriceEl = document.getElementById('current-price');
-                        if (currentPriceEl) {
-                            currentPriceEl.textContent = data.current_price ? data.current_price : 'Нет ставок';
-                        }
+                    const currentPriceEl = document.getElementById('current-price');
+                    if (currentPriceEl) {
+                        currentPriceEl.textContent = data.current_price ? data.current_price : 'Нет ставок';
+                    }
 
-                        const biddersListEl = document.getElementById('bidders-list');
-                        if (biddersListEl) {
-                            biddersListEl.innerHTML = '';
-                            if (data.bidders.length > 0) {
-                                let html = '<p>Все участники:</p><ul class="list-group">';
-                                data.bidders.forEach(bidder => {
-                                    const isCurrent = data.current_price && bidder.amount === data.current_price;
-                                    html += `<li class="list-group-item ${isCurrent ? 'list-group-item-success' : ''}">${bidder.username} (ставка: ${bidder.amount})</li>`;
-                                });
-                                html += '</ul>';
-                                biddersListEl.innerHTML = html;
-                            } else {
-                                biddersListEl.innerHTML = '<p>Ставок пока нет.</p>';
-                            }
+                    const biddersListEl = document.getElementById('bidders-list');
+                    if (biddersListEl) {
+                        biddersListEl.innerHTML = '';
+                        if (data.bidders.length > 0) {
+                            let html = '<p>Все участники:</p><ul class="list-group">';
+                            data.bidders.forEach(bidder => {
+                                const isCurrent = data.current_price && bidder.amount === data.current_price;
+                                html += `<li class="list-group-item ${isCurrent ? 'list-group-item-success' : ''}">${bidder.username} (ставка: ${bidder.amount})</li>`;
+                            });
+                            html += '</ul>';
+                            biddersListEl.innerHTML = html;
+                        } else {
+                            biddersListEl.innerHTML = '<p>Ставок пока нет.</p>';
                         }
+                    }
 
-                        const timeUntilEl = document.getElementById('time-until');
-                        if (timeUntilEl) {
-                            if (data.is_auction_ended) {
-                                timeUntilEl.remove();
-                                if (!document.getElementById('auction-ended-message')) {
-                                    const message = document.createElement('p');
-                                    message.id = 'auction-ended-message';
-                                    message.textContent = 'Аукцион завершен.';
-                                    document.querySelector('.col-md-6')?.appendChild(message);
-                                }
-                            } else {
-                                timeUntilEl.textContent = `Время до окончания: ${formatTimeUntil(data.time_until)}`;
-                            }
-                        }
-
-                        const commentsListEl = document.getElementById('comments-list');
-                        if (commentsListEl) {
-                            commentsListEl.innerHTML = '';
-                            if (data.comments && data.comments.length > 0) {
-                                data.comments.forEach(comment => {
-                                    const date = new Date(comment.created_at).toLocaleString();
-                                    let commentHtml = `
-                                                <div class="card mt-2" id="comment-${comment.id}">
-                                                    <div class="card-body">
-                                                        <p>${comment.content}</p>
-                                                        <p>Автор: ${comment.username} | ${date}</p>
-                                            `;
-                                    if (comment.can_edit) {
-                                        commentHtml += `
-                                                    <button class="btn btn-sm btn-warning edit-comment-btn" data-comment-id="${comment.id}">Редактировать</button>
-                                                    <form method="post" style="display:inline;" onsubmit="return confirm('Удалить комментарий?');" class="delete-comment-form">
-                                                        <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
-                                                        <input type="hidden" name="delete_comment" value="true">
-                                                        <input type="hidden" name="comment_id" value="${comment.id}">
-                                                        <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
-                                                    </form>
-                                                    <form method="post" class="edit-comment-form" style="display:none;" data-comment-id="${comment.id}">
-                                                        <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
-                                                        <textarea name="content" rows="3" class="form-control">${comment.content}</textarea>
-                                                        <input type="hidden" name="edit_comment" value="true">
-                                                        <input type="hidden" name="comment_id" value="${comment.id}">
-                                                        <button type="submit" class="btn btn-sm btn-success mt-2">Сохранить</button>
-                                                        <button type="button" class="btn btn-sm btn-secondary mt-2 cancel-edit-btn">Отмена</button>
-                                                    </form>
-                                                `;
-                                    }
-                                    if (!data.is_auction_ended) {
-                                        commentHtml += `
-                                                    <button class="btn btn-sm btn-primary reply-comment-btn" data-comment-id="${comment.id}">Ответить</button>
-                                                    <form method="post" class="reply-comment-form" style="display:none;" data-comment-id="${comment.id}">
-                                                        <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
-                                                        <textarea name="content" rows="3" class="form-control" placeholder="Ваш ответ"></textarea>
-                                                        <input type="hidden" name="comment" value="true">
-                                                        <input type="hidden" name="parent" value="${comment.id}">
-                                                        <button type="submit" class="btn btn-sm btn-primary mt-2">Отправить ответ</button>
-                                                        <button type="button" class="btn btn-sm btn-secondary mt-2 cancel-reply-btn">Отмена</button>
-                                                    </form>
-                                                `;
-                                    }
-                                    if (comment.replies_count > 0) {
-                                        commentHtml += `
-                                                    <button class="btn btn-sm btn-info show-replies-btn" data-comment-id="${comment.id}" data-replies-count="${comment.replies_count}">
-                                                        Показать ответы (${comment.replies_count})
-                                                    </button>
-                                                    <div class="replies-container" id="replies-${comment.id}" style="display:none;">
-                                                `;
-                                        comment.replies.forEach(reply => {
-                                            const replyDate = new Date(reply.created_at).toLocaleString();
-                                            commentHtml += `
-                                                        <div class="card mt-2 ms-4" id="comment-${reply.id}">
-                                                            <div class="card-body">
-                                                                <p>${reply.content}</p>
-                                                                <p>Автор: ${reply.username} | ${replyDate}</p>
-                                                    `;
-                                            if (reply.can_edit) {
-                                                commentHtml += `
-                                                            <button class="btn btn-sm btn-warning edit-comment-btn" data-comment-id="${reply.id}">Редактировать</button>
-                                                            <form method="post" style="display:inline;" onsubmit="return confirm('Удалить ответ?');" class="delete-comment-form">
-                                                                <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
-                                                                <input type="hidden" name="delete_comment" value="true">
-                                                                <input type="hidden" name="comment_id" value="${reply.id}">
-                                                                <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
-                                                            </form>
-                                                            <form method="post" class="edit-comment-form" style="display:none;" data-comment-id="${reply.id}">
-                                                                <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
-                                                                <textarea name="content" rows="3" class="form-control">${reply.content}</textarea>
-                                                                <input type="hidden" name="edit_comment" value="true">
-                                                                <input type="hidden" name="comment_id" value="${reply.id}">
-                                                                <button type="submit" class="btn btn-sm btn-success mt-2">Сохранить</button>
-                                                                <button type="button" class="btn btn-sm btn-secondary mt-2 cancel-edit-btn">Отмена</button>
-                                                            </form>
-                                                        `;
-                                            }
-                                            commentHtml += `
-                                                            </div>
-                                                        </div>
-                                                    `;
-                                        });
-                                        commentHtml += `
-                                                    </div>
-                                                `;
-                                    }
-                                    commentHtml += `
-                                                    </div>
-                                                </div>
-                                            `;
-                                    commentsListEl.innerHTML += commentHtml;
-                                });
-                            } else {
-                                commentsListEl.innerHTML = '<p>Комментариев пока нет.</p>';
-                            }
-                        }
-
+                    const timeUntilEl = document.getElementById('time-until');
+                    if (timeUntilEl) {
                         if (data.is_auction_ended) {
-                            document.getElementById('bid-form')?.remove();
-                            document.getElementById('comment-form')?.remove();
+                            timeUntilEl.remove();
                             if (!document.getElementById('auction-ended-message')) {
                                 const message = document.createElement('p');
                                 message.id = 'auction-ended-message';
                                 message.textContent = 'Аукцион завершен.';
                                 document.querySelector('.col-md-6')?.appendChild(message);
                             }
+                        } else {
+                            timeUntilEl.textContent = `Время до окончания: ${formatTimeUntil(data.time_until)}`;
                         }
-
-                        restoreUIState();
-                        bindCommentEvents();
                     }
+
+                    const commentsListEl = document.getElementById('comments-list');
+                    if (commentsListEl) {
+                        commentsListEl.innerHTML = '';
+                        if (data.comments && data.comments.length > 0) {
+                            data.comments.forEach(comment => {
+                                const date = new Date(comment.created_at).toLocaleString();
+                                let commentHtml = `
+                                    <div class="card mt-2" id="comment-${comment.id}">
+                                        <div class="card-body">
+                                            <p>${comment.content}</p>
+                                            <p>Автор: ${comment.username} | ${date}</p>
+                                `;
+                                if (comment.can_edit) {
+                                    commentHtml += `
+                                        <button class="btn btn-sm btn-warning edit-comment-btn" data-comment-id="${comment.id}">Редактировать</button>
+                                        <form method="post" style="display:inline;" onsubmit="return confirm('Удалить комментарий?');" class="delete-comment-form">
+                                            <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+                                            <input type="hidden" name="delete_comment" value="true">
+                                            <input type="hidden" name="comment_id" value="${comment.id}">
+                                            <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
+                                        </form>
+                                        <form method="post" class="edit-comment-form" style="display:none;" data-comment-id="${comment.id}">
+                                            <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+                                            <textarea name="content" rows="3" class="form-control">${comment.content}</textarea>
+                                            <input type="hidden" name="edit_comment" value="true">
+                                            <input type="hidden" name="comment_id" value="${comment.id}">
+                                            <button type="submit" class="btn btn-sm btn-success mt-2">Сохранить</button>
+                                            <button type="button" class="btn btn-sm btn-secondary mt-2 cancel-edit-btn">Отмена</button>
+                                        </form>
+                                    `;
+                                }
+                                if (!data.is_auction_ended) {
+                                    commentHtml += `
+                                        <button class="btn btn-sm btn-primary reply-comment-btn" data-comment-id="${comment.id}">Ответить</button>
+                                        <form method="post" class="reply-comment-form" style="display:none;" data-comment-id="${comment.id}">
+                                            <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+                                            <textarea name="content" rows="3" class="form-control" placeholder="Ваш ответ"></textarea>
+                                            <input type="hidden" name="comment" value="true">
+                                            <input type="hidden" name="parent" value="${comment.id}">
+                                            <button type="submit" class="btn btn-sm btn-primary mt-2">Отправить ответ</button>
+                                            <button type="button" class="btn btn-sm btn-secondary mt-2 cancel-reply-btn">Отмена</button>
+                                        </form>
+                                    `;
+                                }
+                                if (comment.replies_count > 0) {
+                                    commentHtml += `
+                                        <button class="btn btn-sm btn-info show-replies-btn" data-comment-id="${comment.id}" data-replies-count="${comment.replies_count}">
+                                            Показать ответы (${comment.replies_count})
+                                        </button>
+                                        <div class="replies-container" id="replies-${comment.id}" style="display:none;">
+                                    `;
+                                    comment.replies.forEach(reply => {
+                                        const replyDate = new Date(reply.created_at).toLocaleString();
+                                        commentHtml += `
+                                            <div class="card mt-2 ms-4" id="comment-${reply.id}">
+                                                <div class="card-body">
+                                                    <p>${reply.content}</p>
+                                                    <p>Автор: ${reply.username} | ${replyDate}</p>
+                                        `;
+                                        if (reply.can_edit) {
+                                            commentHtml += `
+                                                <button class="btn btn-sm btn-warning edit-comment-btn" data-comment-id="${reply.id}">Редактировать</button>
+                                                <form method="post" style="display:inline;" onsubmit="return confirm('Удалить ответ?');" class="delete-comment-form">
+                                                    <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+                                                    <input type="hidden" name="delete_comment" value="true">
+                                                    <input type="hidden" name="comment_id" value="${reply.id}">
+                                                    <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
+                                                </form>
+                                                <form method="post" class="edit-comment-form" style="display:none;" data-comment-id="${reply.id}">
+                                                    <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+                                                    <textarea name="content" rows="3" class="form-control">${reply.content}</textarea>
+                                                    <input type="hidden" name="edit_comment" value="true">
+                                                    <input type="hidden" name="comment_id" value="${reply.id}">
+                                                    <button type="submit" class="btn btn-sm btn-success mt-2">Сохранить</button>
+                                                    <button type="button" class="btn btn-sm btn-secondary mt-2 cancel-edit-btn">Отмена</button>
+                                                </form>
+                                            `;
+                                        }
+                                        commentHtml += `
+                                                </div>
+                                            </div>
+                                        `;
+                                    });
+                                    commentHtml += `
+                                        </div>
+                                    `;
+                                }
+                                commentHtml += `
+                                        </div>
+                                    </div>
+                                `;
+                                commentsListEl.innerHTML += commentHtml;
+                            });
+                        } else {
+                            commentsListEl.innerHTML = '<p>Комментариев пока нет.</p>';
+                        }
+                    }
+
+                    if (data.is_auction_ended) {
+                        document.getElementById('bid-form')?.remove();
+                        document.getElementById('comment-form')?.remove();
+                        if (!document.getElementById('auction-ended-message')) {
+                            const message = document.createElement('p');
+                            message.id = 'auction-ended-message';
+                            message.textContent = 'Аукцион завершен.';
+                            document.querySelector('.col-md-6')?.appendChild(message);
+                        }
+                    }
+
+                    restoreUIState();
+                    bindCommentEvents();
                 })
                 .catch(error => console.error('Error updating page data:', error));
         }
@@ -816,12 +825,12 @@
                 const isHidden = repliesContainer.style.display === 'none';
                 repliesContainer.style.display = isHidden ? 'block' : 'none';
                 const repliesCount = this.dataset.repliesCount || this.textContent.match(/\d+/)?.[0] || 0;
-                this.textContent = isHidden ? `Скрыть ответы` : `Показать ответы (${repliesCount})`;
+                this.textContent = isHidden ? `Скрыть ответы (${repliesCount})` : `Показать ответы (${repliesCount})`;
                 this.dataset.repliesCount = repliesCount;
             }
         }
 
-        if (pageId) {
+        if (pageId === 'lot_detail') {
             setInterval(updatePageData, updateInterval);
             updatePageData();
             bindCommentEvents();

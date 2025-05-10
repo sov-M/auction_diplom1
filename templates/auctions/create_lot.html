@@ -1,56 +1,299 @@
-<!-- templates/auction/create_lot.html -->
-
+<!-- templates/auctions/create_lot.html -->
 {% extends 'base.html' %}
-
+{% block page_id %}create_lot{% endblock %}
 {% block content %}
 
 <style>
     .lot-form {
+        width: 100%;
+        max-width: 800px;
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(10px);
         padding: 2rem;
-        border-radius: 15px;
+        border-radius: 20px;
         border: 2px solid #00f7ff;
+        margin: 2rem auto;
         box-shadow: 0 5px 20px rgba(0, 247, 255, 0.3);
-        max-width: 700px;
-        margin: 3rem auto;
     }
 
-    .lot-form p {
-        margin-bottom: 1.5rem;
-    }
-
-    .lot-form label {
-        font-weight: 600;
+    .lot-form h1 {
         color: #fff;
-        text-shadow: 0 0 5px rgba(0, 247, 255, 0.5);
-    }
-
-    .lot-form .form-control {
+        text-shadow: 0 0 10px rgba(0, 247, 255, 0.5);
         margin-bottom: 1.5rem;
+        text-align: center;
     }
 
-    .lot-form .btn {
+    .lot-form .form-group {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        position: relative;
+    }
+
+    .lot-form .form-group label {
+        width: 30%;
+        color: #e2e8f0;
+        font-size: 1rem;
         margin-right: 1rem;
+        text-align: right;
     }
 
-    @media (max-width: 600px) {
+    .lot-form .form-group .form-control {
+        width: 40%;
+        padding: 0.8rem;
+        border: 2px solid #00f7ff;
+        border-radius: 10px;
+        color: #e2e8f0;
+        background: rgba(255, 255, 255, 0.05);
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .lot-form .form-group .form-control:focus {
+        border-color: #ff007a;
+        box-shadow: 0 0 10px rgba(255, 0, 122, 0.5);
+        outline: none;
+    }
+
+    .lot-form .form-group .form-control::placeholder {
+        color: #cbd5e1;
+    }
+
+    .lot-form .btn-primary {    
+        display: block;
+        margin: 0 auto;
+        width: 150px;
+        padding: 0.8rem;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid #00f7ff;
+        border-radius: 10px;
+        color: #e2e8f0;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background 0.3s ease, transform 0.2s ease;
+    }
+
+    .lot-form .btn-primary:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.05);
+    }
+
+    .custom-file-upload {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 40%;
+        padding: 0.8rem;
+        border: 2px solid #00f7ff;
+        border-radius: 10px;
+        color: #e2e8f0;
+        background: rgba(255, 255, 255, 0.05);
+        cursor: pointer;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        text-align: center;
+    }
+
+    .custom-file-upload:hover {
+        border-color: #ff007a;
+        box-shadow: 0 0 10px rgba(255, 0, 122, 0.5);
+    }
+
+    .form-group input[type="file"] {
+        display: none;
+    }
+
+    .form-group .form-control[title]:hover::after,
+    .form-group .custom-file-upload[title]:hover::after {
+        content: attr(title);
+        position: absolute;
+        top: -2.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: #e2e8f0;
+        padding: 0.5rem;
+        border-radius: 5px;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        z-index: 10;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
+    .form-group .form-control[title]:hover::before,
+    .form-group .custom-file-upload[title]:hover::before {
+        content: '';
+        position: absolute;
+        top: -0.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-top-color: rgba(0, 0, 0, 0.8);
+        z-index: 10;
+    }
+
+    /* Стили для ошибок */
+    .form-errors {
+        background: rgba(255, 0, 0, 0.2);
+        border: 2px solid #ff0000;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        color: #e2e8f0;
+        text-align: center;
+    }
+
+    .form-group .errorlist {
+        color: #ff0000;
+        font-size: 0.9rem;
+        margin-left: calc(30% + 1rem);
+        width: 40%;
+        list-style: none;
+        padding: 0;
+    }
+
+    @media (max-width: 768px) {
         .lot-form {
-            padding: 1.5rem;
+            padding: 1rem;
         }
 
-        .lot-form .btn {
+        .lot-form .form-group {
             display: block;
-            width: 100%;
-            margin: 0.7rem 0;
         }
+
+        .lot-form .form-group label {
+            width: 100%;
+            text-align: left;
+            margin-bottom: 0.5rem;
+        }
+
+        .lot-form .form-group .form-control,
+        .custom-file-upload {
+            width: 100%;
+        }
+
+        .form-group .errorlist {
+            margin-left: 0;
+            width: 100%;
+        }
+    }
+
+    .form-group .form-control option {
+        background: rgb(59, 80, 105);
+        color: white;
+        font-size: 1rem;
     }
 </style>
 
-<h1>Создать лот</h1>
-<form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-success">Создать</button>
-</form>
+<div class="lot-form">
+    <h1>Создать лот</h1>
+    {% if form.errors %}
+        <div class="form-errors">
+            <p>Не удалось создать лот. Пожалуйста, исправьте следующие ошибки:</p>
+            <ul>
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li>{{ field.label }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="{{ form.title.id_for_label }}">Название</label>
+            <input type="text" name="title" id="{{ form.title.id_for_label }}" class="form-control" value="{{ form.title.value|default:'' }}" title="{{ form.title.help_text }}" required>
+            {{ form.title.errors }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.description.id_for_label }}">Описание</label>
+            <textarea name="description" id="{{ form.description.id_for_label }}" class="form-control" title="{{ form.description.help_text }}" required>{{ form.description.value|default:'' }}</textarea>
+            {{ form.description.errors }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.initial_price.id_for_label }}">Начальная цена</label>
+            <input type="number" name="initial_price" id="{{ form.initial_price.id_for_label }}" class="form-control" value="{{ form.initial_price.value|default:'' }}" title="{{ form.initial_price.help_text }}" required>
+            {{ form.initial_price.errors }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.bid_step.id_for_label }}">Шаг ставки</label>
+            <input type="number" name="bid_step" id="{{ form.bid_step.id_for_label }}" class="form-control" value="{{ form.bid_step.value|default:'100.00' }}" title="{{ form.bid_step.help_text }}" required>
+            {{ form.bid_step.errors }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.auction_end.id_for_label }}">Дата окончания</label>
+            <input type="datetime-local" name="auction_end" id="{{ form.auction_end.id_for_label }}" class="form-control" value="{{ form.auction_end.value|default:'' }}" title="{{ form.auction_end.help_text }}" required>
+            {{ form.auction_end.errors }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.condition.id_for_label }}">Состояние</label>
+            <select name="condition" id="{{ form.condition.id_for_label }}" class="form-control" title="{{ form.condition.help_text }}" required>
+                {% for value, label in form.condition.field.choices %}
+                    <option value="{{ value }}" {% if form.condition.value == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            {{ form.condition.errors }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.category.id_for_label }}">Категория</label>
+            <select name="category" id="{{ form.category.id_for_label }}" class="form-control" title="{{ form.category.help_text }}" required>
+                {% for value, label in form.category.field.choices %}
+                    <option value="{{ value }}" {% if form.category.value == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            {{ form.category.errors }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.tags.id_for_label }}">Теги</label>
+            <input type="text" name="tags" id="{{ form.tags.id_for_label }}" class="form-control" value="{{ form.tags.value|default:'' }}" title="{{ form.tags.help_text }}" required>
+            {{ form.tags.errors }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.main_image.id_for_label }}">Основное изображение</label>
+            <label class="custom-file-upload" title="{{ form.main_image.help_text }}">
+                Выберите изображение
+                <input type="file" name="main_image" id="{{ form.main_image.id_for_label }}">
+            </label>
+            {{ form.main_image.errors }}
+        </div>
+    <div class="form-group">
+        <label for="{{ form.additional_image_1.id_for_label }}">Дополнительное изображение 1</label>
+        <label class="custom-file-upload" title="{{ form.additional_image_1.help_text }}">
+            Выберите изображение
+            <input type="file" name="additional_image_1" id="{{ form.additional_image_1.id_for_label }}">
+        </label>
+        {{ form.additional_image_1.errors }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.additional_image_2.id_for_label }}">Дополнительное изображение 2</label>
+        <label class="custom-file-upload" title="{{ form.additional_image_2.help_text }}">
+            Выберите изображение
+            <input type="file" name="additional_image_2" id="{{ form.additional_image_2.id_for_label }}">
+        </label>
+        {{ form.additional_image_2.errors }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.additional_image_3.id_for_label }}">Дополнительное изображение 3</label>
+        <label class="custom-file-upload" title="{{ form.additional_image_3.help_text }}">
+            Выберите изображение
+            <input type="file" name="additional_image_3" id="{{ form.additional_image_3.id_for_label }}">
+        </label>
+        {{ form.additional_image_3.errors }}
+    </div>
+        <div class="form-group">
+            <label for="{{ form.location_country.id_for_label }}">Страна</label>
+            <input type="text" name="location_country" id="{{ form.location_country.id_for_label }}" class="form-control" value="{{ form.location_country.value|default:'Не указано' }}" title="{{ form.location_country.help_text }}" required>
+            {{ form.location_country.errors }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.location_city.id_for_label }}">Город</label>
+            <input type="text" name="location_city" id="{{ form.location_city.id_for_label }}" class="form-control" value="{{ form.location_city.value|default:'' }}" title="{{ form.location_city.help_text }}">
+            {{ form.location_city.errors }}
+        </div>
+        <button type="submit" class="btn-primary">Создать лот</button>
+    </form>
+</div>
+
 {% endblock %}

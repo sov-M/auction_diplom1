@@ -23,9 +23,9 @@ class Lot(models.Model):
     ]
 
     CONDITION_CHOICES = [
+        ('not_specified', 'Не указано'),
         ('new', 'Новое'),
         ('used', 'Б/У'),
-        ('not_specified', 'Не указано'),
         ('damaged', 'Повреждено'),
         ('refurbished', 'Восстановлено'),
     ]
@@ -34,7 +34,7 @@ class Lot(models.Model):
     description = models.TextField()
     initial_price = models.DecimalField(max_digits=10, decimal_places=2)
     current_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    main_image = models.ImageField(upload_to='lots/main/', null=True, blank=True)
+    main_image = models.ImageField(upload_to='lots/main/')
     additional_image_1 = models.ImageField(upload_to='lots/additional/', null=True, blank=True)
     additional_image_2 = models.ImageField(upload_to='lots/additional/', null=True, blank=True)
     additional_image_3 = models.ImageField(upload_to='lots/additional/', null=True, blank=True)
@@ -52,13 +52,12 @@ class Lot(models.Model):
     )
     tags = models.CharField(
         max_length=200,
-        blank=True,
         help_text='Введите теги через запятую (например: антиквариат, винтаж, редкий)',
-        verbose_name='Теги'
+        verbose_name='Теги',
+        null=True, blank=True
     )
     location_country = models.CharField(
         max_length=100,
-        blank=True,
         verbose_name='Страна'
     )
     location_city = models.CharField(

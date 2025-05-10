@@ -113,8 +113,8 @@ class HomeView(View):
             lots = lots.order_by('-created_at')
 
         if not filters_applied:
-            latest_lots = lots[:4]
-            other_lots = lots[4:]
+            latest_lots = lots[:3]
+            other_lots = lots[3:]
         else:
             latest_lots = None
             other_lots = None
