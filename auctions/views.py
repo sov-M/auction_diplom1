@@ -201,7 +201,7 @@ class LotDetailView(View):
             lot.auction_end <= timezone.now() and 
             not lot.has_bids() and 
             not lot.has_been_extended):
-            lot.auction_end = timezone.now() + timedelta(minutes=2)
+            lot.auction_end = timezone.now() + timedelta(minutes=30)
             lot.has_been_extended = True  # Отмечаем, что продление выполнено
             lot.save()
             print(f"Lot {lot.id} ({lot.title}) extended to: {lot.auction_end}")
