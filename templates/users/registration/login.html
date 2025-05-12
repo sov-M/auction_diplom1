@@ -62,8 +62,8 @@
     }
 
     .auth-container .form-control:focus {
-        border-color: #ff007a;
-        box-shadow: 0 0 10px rgba(255, 0, 122, 0.5);
+        border-color: #00ff62;
+        box-shadow: 0 0 10px rgb(208, 255, 0);
         outline: none;
     }
 
@@ -72,39 +72,21 @@
     }
 
     .auth-container .btn {
-        align-self: center;
-        padding: 0.9rem 2rem;
-        border-radius: 50px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        background: linear-gradient(45deg, #00f7ff, #ff007a);
-        color: #fff;
-        border: none;
-        cursor: pointer;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        box-shadow: 0 5px 15px rgba(0, 247, 255, 0.4);
-        min-width: 200px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid #00f7ff;
+        color: #e2e8f0;
+        border-radius: 20px;
     }
+
 
     .auth-container .btn:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(0, 247, 255, 0.6);
-        background: linear-gradient(45deg, #ff007a, #00f7ff);
-    }
-
-    .auth-container .btn-login {
-        background: linear-gradient(45deg, rgba(139, 53, 106, 0.8), rgba(59, 126, 89, 0.8));
+        background: rgba(255, 255, 255, 0.1);
         border: 2px solid #00f7ff;
-        text-shadow: 0 0 5px rgba(0, 247, 255, 0.5);
+        color: #e2e8f0;
+        border-radius: 20px;
     }
 
-    .auth-container .btn-login:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(255, 0, 122, 0.5);
-        border-color: #ff007a;
-        background: linear-gradient(45deg, rgba(139, 53, 106, 0.9), rgba(59, 126, 89, 0.9));
-    }
+
 
     .auth-container p {
         text-align: center;
@@ -124,19 +106,7 @@
         text-shadow: 0 0 10px rgba(255, 0, 122, 0.5);
     }
 
-    .alert-danger {
-        padding: 1.2rem;
-        margin-bottom: 1.5rem;
-        border-radius: 15px;
-        background: rgba(239, 68, 68, 0.2);
-        border: 2px solid #ef4444;
-        color: #e2e8f0;
-        text-align: center;
-    }
 
-    .alert-danger p {
-        margin: 0.5rem 0;
-    }
 
     @media (max-width: 600px) {
         .auth-container {

@@ -40,6 +40,14 @@ class BidForm(forms.ModelForm):
     class Meta:
         model = Bid
         fields = ['amount']
+        widgets = {
+            'amount': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Введите сумму ставки',
+                'step': '1.00',
+                'min': '0.01'
+            }),
+        }
 
     def __init__(self, *args, **kwargs):
         self.lot = kwargs.pop('lot', None)
@@ -65,6 +73,14 @@ class AutoBidForm(forms.ModelForm):
     class Meta:
         model = AutoBid
         fields = ['max_amount']
+        widgets = {
+            'max_amount': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Введите максимальную сумму',
+                'step': '1.00',
+                'min': '0.01'
+            }),
+        }
 
     def __init__(self, *args, **kwargs):
         self.lot = kwargs.pop('lot', None)
@@ -94,7 +110,11 @@ class CommentForm(forms.ModelForm):
         model = Comment
         fields = ['content', 'parent']
         widgets = {
-            'content': forms.Textarea(attrs={'rows': 3}),
+            'content': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'form-control',
+                'placeholder': 'Ваш комментарий'
+            }),
         }
 
     def clean_parent(self):

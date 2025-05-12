@@ -124,6 +124,18 @@
         transform: scale(1.05);
     }
 
+    .btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid #00f7ff;
+        color: #e2e8f0;
+        border-radius: 20px;
+    }
+
+    .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.05);
+    }
+
     .btn-primary {
         background: rgba(255, 255, 255, 0.1);
         border: 2px solid #00f7ff;
@@ -201,7 +213,23 @@
         resize: vertical;
         min-height: 80px;
         max-height: 200px;
+    }
 
+    /* Стили для полей ввода ставок */
+    #bid-form .form-control,
+    #auto-bid-form .form-control {
+        min-height: 40px; /* Для input, чтобы не выглядели слишком высокими */
+        width: 42%;
+    }
+
+    /* Стили для меток */
+    #bid-form label,
+    #auto-bid-form label,
+    #comment-form label {
+        color: #e2e8f0;
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+        display: block;
     }
 
     .modal-content {
@@ -286,7 +314,7 @@
                 <div class="col-md-4"><img src="{{ lot.additional_image_1.url }}" class="img-fluid" alt="Доп. изображение 1" data-bs-toggle="modal" data-bs-target="#imageModal" data-slide-to="1"></div>
                 {% endif %}
                 {% if lot.additional_image_2 %}
-                <div class="col-md-4"><img src="{{ lot.additional_image_2.url }}" class="img-fluid" alt="Доп. изображение 2" data-bs-toggle="modal" data-bs-target="#imageModal" data-slide-to="2"></div>
+                <div class="col-md-4"><img src="{{ lot.additional_image_2.url }}" class="img-fluid" alt="Доп. изображение 2" data-bs-toggle="modal" data-bs-target="#imageModal" data-slide-to+/-="2"></div>
                 {% endif %}
                 {% if lot.additional_image_3 %}
                 <div class="col-md-4"><img src="{{ lot.additional_image_3.url }}" class="img-fluid" alt="Доп. изображение 3" data-bs-toggle="modal" data-bs-target="#imageModal" data-slide-to="3"></div>
@@ -333,8 +361,9 @@
             <h4>Сделать ставку</h4>
             <form method="post" id="bid-form">
                 {% csrf_token %}
-                {{ bid_form }}
-                <button type="submit" name="bid" class="btn btn-success">Сделать ставку</button>
+                <label for="id_amount">Сумма ставки:</label>
+                {{ bid_form.amount }}
+                <button type="submit" name="bid" class="btn btn-success btn-sm">Сделать ставку</button>
             </form>
             <h4>Установить автоматическую ставку</h4>
             {% if user_auto_bid %}
@@ -342,27 +371,29 @@
             <p>Ваша автоматическая ставка: {{ user_auto_bid.max_amount }} (перебита)</p>
             <form method="post" id="auto-bid-form">
                 {% csrf_token %}
-                {{ auto_bid_form }}
-                <button type="submit" name="auto_bid" class="btn btn-primary">Установить новую автоставку</button>
+                <label for="id_max_amount">Максимальная сумма:</label>
+                {{ auto_bid_form.max_amount }}
+                <button type="submit" name="auto_bid" class="btn btn-primary btn-sm">Установить новую автоставку</button>
             </form>
             <form method="post" style="display:inline;" onsubmit="return confirm('Удалить автоматическую ставку?');">
                 {% csrf_token %}
                 <input type="hidden" name="remove_auto_bid" value="true">
-                <button type="submit" class="btn btn-danger">Удалить автоставку</button>
+                <button type="submit" class="btn btn-danger btn-sm">Удалить автоставку</button>
             </form>
             {% else %}
             <p>Ваша автоматическая ставка: {{ user_auto_bid.max_amount }} (лидирует)</p>
             <form method="post" style="display:inline;" onsubmit="return confirm('Удалить автоматическую ставку?');">
                 {% csrf_token %}
                 <input type="hidden" name="remove_auto_bid" value="true">
-                <button type="submit" class="btn btn-danger">Удалить автоставку</button>
+                <button type="submit" class="btn btn-danger btn-sm">Удалить автоставку</button>
             </form>
             {% endif %}
             {% else %}
             <form method="post" id="auto-bid-form">
                 {% csrf_token %}
-                {{ auto_bid_form }}
-                <button type="submit" name="auto_bid" class="btn btn-primary">Установить автоставку</button>
+                <label for="id_max_amount">Максимальная сумма:</label>
+                {{ auto_bid_form.max_amount }}
+                <button type="submit" name="auto_bid" class="btn btn-primary btn-sm">Установить автоставку</button>
             </form>
             {% endif %}
             {% endif %}
@@ -434,8 +465,9 @@
     {% if user.is_authenticated and not lot.is_auction_ended %}
     <form method="post" id="comment-form">
         {% csrf_token %}
+        <label for="id_content">Ваш комментарий:</label>
         <textarea name="content" rows="3" class="form-control" placeholder="Ваш комментарий" required>{{ comment_form.content.value|default_if_none:'' }}</textarea>
-        <button type="submit" name="comment" class="btn btn-primary">Добавить комментарий</button>
+        <button type="submit" name="comment" class="btn btn-primary btn-sm">Добавить комментарий</button>
     </form>
     {% elif lot.is_auction_ended %}
     <p>Комментарии нельзя оставлять после завершения аукциона.</p>
