@@ -1,10 +1,10 @@
+# models.py
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from users.models import User
 from django.core.validators import MinValueValidator
 from datetime import timedelta
-
 
 class Lot(models.Model):
     CATEGORY_CHOICES = [
@@ -87,34 +87,17 @@ class Lot(models.Model):
     def __str__(self):
         return self.title
 
-
 class Bid(models.Model):
     lot = models.ForeignKey(Lot, on_delete=models.CASCADE, related_name='bids')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bids')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
-    is_auto = models.BooleanField(default=False)  # Автоматическая ставка
 
     class Meta:
         ordering = ['-amount']
 
     def __str__(self):
-        return f"{self.user.username} - {self.amount} on {self.lot.title} {'(auto)' if self.is_auto else ''}"
-
-
-class AutoBid(models.Model):
-    lot = models.ForeignKey(Lot, on_delete=models.CASCADE, related_name='auto_bids')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='auto_bids')
-    max_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('lot', 'user')  # Один пользователь — одна автоставка на лот
-        ordering = ['-max_amount']
-
-    def __str__(self):
-        return f"AutoBid by {self.user.username} - {self.max_amount} on {self.lot.title}"
-
+        return f"{self.user.username} - {self.amount} on {self.lot.title}"
 
 class Comment(models.Model):
     lot = models.ForeignKey(Lot, on_delete=models.CASCADE, related_name='comments')
@@ -124,11 +107,10 @@ class Comment(models.Model):
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='replies')
 
     class Meta:
-        ordering = ['-created_at']  # Сначала старые комментарии, чтобы ответы шли после родительских
+        ordering = ['-created_at']
 
     def __str__(self):
         return f"Comment by {self.user.username} on {self.lot.title}"
 
     def can_edit_or_delete(self):
-        """Проверяет, можно ли редактировать или удалить комментарий (в течение 5 минут)."""
         return timezone.now() <= self.created_at + timedelta(minutes=5)

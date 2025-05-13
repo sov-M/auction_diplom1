@@ -177,17 +177,6 @@
         font-size: 0.9rem;
     }
 
-    #bid-form,
-    #auto-bid-form,
-    #comment-form {
-        {% comment %} background: rgba(255, 255, 255, 0.1);
-        padding: 1.5rem;
-        border-radius: 15px;
-        border: 2px solid #00f7ff;
-        box-shadow: 0 5px 20px rgba(0, 247, 255, 0.3);
-        margin-bottom: 2rem; {% endcomment %}
-    }
-
     .form-control {
         padding: 0.8rem;
         border: 2px solid #00f7ff;
@@ -215,21 +204,26 @@
         max-height: 200px;
     }
 
-    /* Стили для полей ввода ставок */
-    #bid-form .form-control,
-    #auto-bid-form .form-control {
-        min-height: 40px; /* Для input, чтобы не выглядели слишком высокими */
+    #bid-form .form-control {
+        min-height: 40px;
         width: 42%;
     }
 
-    /* Стили для меток */
-    #bid-form label,
-    #auto-bid-form label,
-    #comment-form label {
+    #bid-form label {
         color: #e2e8f0;
         font-size: 1rem;
         margin-bottom: 0.5rem;
         display: block;
+    }
+
+    .error-message {
+        color: #ff007a;
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+        background: rgba(255, 0, 122, 0.1);
+        padding: 0.5rem;
+        border-radius: 5px;
+        border: 1px solid #ff007a;
     }
 
     .modal-content {
@@ -305,19 +299,26 @@
     <div class="row">
         <div class="col-md-6">
             {% if lot.main_image %}
-            <img src="{{ lot.main_image.url }}" class="img-fluid" alt="{{ lot.title }}" data-bs-toggle="modal" data-bs-target="#imageModal" data-slide-to="0">
+            <img src="{{ lot.main_image.url }}" class="img-fluid" alt="{{ lot.title }}" data-bs-toggle="modal"
+                data-bs-target="#imageModal" data-slide-to="0">
             {% else %}
             <div class="img-fluid placeholder" style="background: rgba(255, 255, 255, 0.05); height: 300px;"></div>
             {% endif %}
             <div class="row">
                 {% if lot.additional_image_1 %}
-                <div class="col-md-4"><img src="{{ lot.additional_image_1.url }}" class="img-fluid" alt="Доп. изображение 1" data-bs-toggle="modal" data-bs-target="#imageModal" data-slide-to="1"></div>
+                <div class="col-md-4"><img src="{{ lot.additional_image_1.url }}" class="img-fluid"
+                        alt="Доп. изображение 1" data-bs-toggle="modal" data-bs-target="#imageModal" data-slide-to="1">
+                </div>
                 {% endif %}
                 {% if lot.additional_image_2 %}
-                <div class="col-md-4"><img src="{{ lot.additional_image_2.url }}" class="img-fluid" alt="Доп. изображение 2" data-bs-toggle="modal" data-bs-target="#imageModal" data-slide-to+/-="2"></div>
+                <div class="col-md-4"><img src="{{ lot.additional_image_2.url }}" class="img-fluid"
+                        alt="Доп. изображение 2" data-bs-toggle="modal" data-bs-target="#imageModal" data-slide-to="2">
+                </div>
                 {% endif %}
                 {% if lot.additional_image_3 %}
-                <div class="col-md-4"><img src="{{ lot.additional_image_3.url }}" class="img-fluid" alt="Доп. изображение 3" data-bs-toggle="modal" data-bs-target="#imageModal" data-slide-to="3"></div>
+                <div class="col-md-4"><img src="{{ lot.additional_image_3.url }}" class="img-fluid"
+                        alt="Доп. изображение 3" data-bs-toggle="modal" data-bs-target="#imageModal" data-slide-to="3">
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -337,7 +338,8 @@
                 <p>Все участники:</p>
                 <ul class="list-group">
                     {% for bidder in unique_bidders %}
-                    <li class="list-group-item {% if bidder.max_amount == lot.current_price %}list-group-item-success{% endif %}">
+                    <li
+                        class="list-group-item {% if bidder.max_amount == lot.current_price %}list-group-item-success{% endif %}">
                         {{ bidder.user__username }} (ставка: {{ bidder.max_amount }})
                     </li>
                     {% endfor %}
@@ -351,7 +353,8 @@
             <p>Вы не можете делать ставки на свой лот.</p>
             {% if not lot.has_bids %}
             <a href="{% url 'edit_lot' lot.pk %}" class="btn btn-warning">Редактировать лот</a>
-            <form method="post" style="display:inline;" onsubmit="return confirm('Вы уверены, что хотите отменить лот?');">
+            <form method="post" style="display:inline;"
+                onsubmit="return confirm('Вы уверены, что хотите отменить лот?');">
                 {% csrf_token %}
                 <input type="hidden" name="cancel_lot" value="true">
                 <button type="submit" class="btn btn-danger">Отменить лот</button>
@@ -361,44 +364,15 @@
             <h4>Сделать ставку</h4>
             <form method="post" id="bid-form">
                 {% csrf_token %}
-                <label for="id_amount">Сумма ставки:</label>
+                <label for="id_amount">Сумма ставки (мин. {{ min_bid_amount }}):</label>
                 {{ bid_form.amount }}
+                {% if bid_form.errors %}
+                {% endif %}
                 <button type="submit" name="bid" class="btn btn-success btn-sm">Сделать ставку</button>
             </form>
-            <h4>Установить автоматическую ставку</h4>
-            {% if user_auto_bid %}
-            {% if not current_bid or current_bid.amount != lot.current_price %}
-            <p>Ваша автоматическая ставка: {{ user_auto_bid.max_amount }} (перебита)</p>
-            <form method="post" id="auto-bid-form">
-                {% csrf_token %}
-                <label for="id_max_amount">Максимальная сумма:</label>
-                {{ auto_bid_form.max_amount }}
-                <button type="submit" name="auto_bid" class="btn btn-primary btn-sm">Установить новую автоставку</button>
-            </form>
-            <form method="post" style="display:inline;" onsubmit="return confirm('Удалить автоматическую ставку?');">
-                {% csrf_token %}
-                <input type="hidden" name="remove_auto_bid" value="true">
-                <button type="submit" class="btn btn-danger btn-sm">Удалить автоставку</button>
-            </form>
-            {% else %}
-            <p>Ваша автоматическая ставка: {{ user_auto_bid.max_amount }} (лидирует)</p>
-            <form method="post" style="display:inline;" onsubmit="return confirm('Удалить автоматическую ставку?');">
-                {% csrf_token %}
-                <input type="hidden" name="remove_auto_bid" value="true">
-                <button type="submit" class="btn btn-danger btn-sm">Удалить автоставку</button>
-            </form>
-            {% endif %}
-            {% else %}
-            <form method="post" id="auto-bid-form">
-                {% csrf_token %}
-                <label for="id_max_amount">Максимальная сумма:</label>
-                {{ auto_bid_form.max_amount }}
-                <button type="submit" name="auto_bid" class="btn btn-primary btn-sm">Установить автоставку</button>
-            </form>
-            {% endif %}
             {% endif %}
             {% elif lot.is_auction_ended %}
-            <p id="auction-ended-message">Аукцион завершен.</p>
+            <p id="auction-ended-message">Аукцион завершён.</p>
             {% else %}
             <p><a href="{% url 'login' %}">Авторизуйтесь</a>, чтобы сделать ставку.</p>
             {% endif %}
@@ -412,7 +386,8 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="imageModalLabel">Фотографии лота</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div id="imageCarousel" class="carousel slide" data-bs-ride="false">
@@ -438,11 +413,13 @@
                             </div>
                             {% endif %}
                         </div>
-                        <button class="carousel-control-prev" type="button" data-bs-target="#imageCarousel" data-bs-slide="prev">
+                        <button class="carousel-control-prev" type="button" data-bs-target="#imageCarousel"
+                            data-bs-slide="prev">
                             <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                             <span class="visually-hidden">Предыдущий</span>
                         </button>
-                        <button class="carousel-control-next" type="button" data-bs-target="#imageCarousel" data-bs-slide="next">
+                        <button class="carousel-control-next" type="button" data-bs-target="#imageCarousel"
+                            data-bs-slide="next">
                             <span class="carousel-control-next-icon" aria-hidden="true"></span>
                             <span class="visually-hidden">Следующий</span>
                         </button>
@@ -466,7 +443,8 @@
     <form method="post" id="comment-form">
         {% csrf_token %}
         <label for="id_content">Ваш комментарий:</label>
-        <textarea name="content" rows="3" class="form-control" placeholder="Ваш комментарий" required>{{ comment_form.content.value|default_if_none:'' }}</textarea>
+        <textarea name="content" rows="3" class="form-control" placeholder="Ваш комментарий"
+            required>{{ comment_form.content.value|default_if_none:'' }}</textarea>
         <button type="submit" name="comment" class="btn btn-primary btn-sm">Добавить комментарий</button>
     </form>
     {% elif lot.is_auction_ended %}
@@ -481,8 +459,10 @@
                 <p>{{ comment.content }}</p>
                 <p>Автор: {{ comment.user.username }} | {{ comment.created_at }}</p>
                 {% if user.is_authenticated and comment.user == user and comment.can_edit_or_delete %}
-                <button class="btn btn-sm btn-warning edit-comment-btn" data-comment-id="{{ comment.id }}">Редактировать</button>
-                <form method="post" style="display:inline;" onsubmit="return confirm('Удалить комментарий?');" class="delete-comment-form">
+                <button class="btn btn-sm btn-warning edit-comment-btn"
+                    data-comment-id="{{ comment.id }}">Редактировать</button>
+                <form method="post" style="display:inline;" onsubmit="return confirm('Удалить комментарий?');"
+                    class="delete-comment-form">
                     {% csrf_token %}
                     <input type="hidden" name="delete_comment" value="true">
                     <input type="hidden" name="comment_id" value="{{ comment.id }}">
@@ -498,7 +478,8 @@
                 </form>
                 {% endif %}
                 {% if user.is_authenticated and not lot.is_auction_ended %}
-                <button class="btn btn-sm btn-primary reply-comment-btn" data-comment-id="{{ comment.id }}">Ответить</button>
+                <button class="btn btn-sm btn-primary reply-comment-btn"
+                    data-comment-id="{{ comment.id }}">Ответить</button>
                 <form method="post" class="reply-comment-form" style="display:none;" data-comment-id="{{ comment.id }}">
                     {% csrf_token %}
                     <textarea name="content" rows="3" class="form-control" placeholder="Ваш ответ" required></textarea>
@@ -509,7 +490,8 @@
                 </form>
                 {% endif %}
                 {% if comment.replies.count %}
-                <button class="btn btn-sm btn-info show-replies-btn" data-comment-id="{{ comment.id }}" data-replies-count="{{ comment.replies.count }}">
+                <button class="btn btn-sm btn-info show-replies-btn" data-comment-id="{{ comment.id }}"
+                    data-replies-count="{{ comment.replies.count }}">
                     Показать ответы ({{ comment.replies.count }})
                 </button>
                 <div class="replies-container" id="replies-{{ comment.id }}" style="display:none;">
@@ -519,20 +501,25 @@
                             <p>{{ reply.content }}</p>
                             <p>Автор: {{ reply.user.username }} | {{ reply.created_at }}</p>
                             {% if user.is_authenticated and reply.user == user and reply.can_edit_or_delete %}
-                            <button class="btn btn-sm btn-warning edit-comment-btn" data-comment-id="{{ reply.id }}">Редактировать</button>
-                            <form method="post" style="display:inline;" onsubmit="return confirm('Удалить ответ?');" class="delete-comment-form">
+                            <button class="btn btn-sm btn-warning edit-comment-btn"
+                                data-comment-id="{{ reply.id }}">Редактировать</button>
+                            <form method="post" style="display:inline;" onsubmit="return confirm('Удалить ответ?');"
+                                class="delete-comment-form">
                                 {% csrf_token %}
                                 <input type="hidden" name="delete_comment" value="true">
                                 <input type="hidden" name="comment_id" value="{{ reply.id }}">
                                 <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
                             </form>
-                            <form method="post" class="edit-comment-form" style="display:none;" data-comment-id="{{ reply.id }}">
+                            <form method="post" class="edit-comment-form" style="display:none;"
+                                data-comment-id="{{ reply.id }}">
                                 {% csrf_token %}
-                                <textarea name="content" rows="3" class="form-control" required>{{ reply.content }}</textarea>
+                                <textarea name="content" rows="3" class="form-control"
+                                    required>{{ reply.content }}</textarea>
                                 <input type="hidden" name="edit_comment" value="true">
                                 <input type="hidden" name="comment_id" value="{{ reply.id }}">
                                 <button type="submit" class="btn btn-sm btn-success mt-2">Сохранить</button>
-                                <button type="button" class="btn btn-sm btn-secondary mt-2 cancel-edit-btn">Отмена</button>
+                                <button type="button"
+                                    class="btn btn-sm btn-secondary mt-2 cancel-edit-btn">Отмена</button>
                             </form>
                             {% endif %}
                         </div>
@@ -565,6 +552,25 @@
                 }
             });
         });
+
+        // Форматирование суммы ставки
+        const bidInput = document.querySelector('#bid-form input[name="amount"]');
+        if (bidInput) {
+            bidInput.addEventListener('blur', function () {
+                let value = parseFloat(this.value);
+                if (!isNaN(value)) {
+                    this.value = value.toFixed(2);
+                }
+            });
+
+            const bidForm = document.querySelector('#bid-form');
+            bidForm.addEventListener('submit', function (event) {
+                let value = parseFloat(bidInput.value);
+                if (!isNaN(value)) {
+                    bidInput.value = value.toFixed(2);
+                }
+            });
+        }
     });
 </script>
 

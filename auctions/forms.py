@@ -1,7 +1,7 @@
+# forms.py
 from django import forms
-from .models import Lot, Comment, Bid, AutoBid
+from .models import Lot, Comment, Bid
 from django.utils import timezone
-
 
 class LotForm(forms.ModelForm):
     class Meta:
@@ -35,7 +35,7 @@ class LotForm(forms.ModelForm):
             raise forms.ValidationError("Минимальный шаг ставки должен быть не менее 1.00.")
         return bid_step
 
-
+# forms.py
 class BidForm(forms.ModelForm):
     class Meta:
         model = Bid
@@ -43,65 +43,35 @@ class BidForm(forms.ModelForm):
         widgets = {
             'amount': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Введите сумму ставки',
-                'step': '1.00',
-                'min': '0.01'
+                'min': '100',
+                'type': 'number',
             }),
         }
 
     def __init__(self, *args, **kwargs):
         self.lot = kwargs.pop('lot', None)
         super().__init__(*args, **kwargs)
+        if self.lot:
+            current_price = self.lot.current_price or self.lot.initial_price
+            min_amount = current_price + self.lot.bid_step
+            self.fields['amount'].widget.attrs['placeholder'] = f'Мин. {min_amount:.2f}'
 
     def clean_amount(self):
         amount = self.cleaned_data['amount']
         if not self.lot:
             raise forms.ValidationError("Лот не указан.")
-        min_amount = self.lot.initial_price
-        if self.lot.current_price:
-            min_amount = self.lot.current_price + self.lot.bid_step
-        else:
-            min_amount = self.lot.initial_price + self.lot.bid_step
+        current_price = self.lot.current_price or self.lot.initial_price
+        min_amount = current_price + self.lot.bid_step
+        max_amount = current_price + (self.lot.bid_step * 100)  # Макс. +100 шагов
         if amount < min_amount:
             raise forms.ValidationError(
-                f"Ставка должна быть не менее {min_amount} (текущая цена + шаг {self.lot.bid_step})."
+                f"Ставка должна быть не менее {min_amount:.2f} (текущая цена {current_price:.2f} + шаг {self.lot.bid_step:.2f})."
+            )
+        if amount > max_amount:
+            raise forms.ValidationError(
+                f"Ставка не может превышать {max_amount:.2f}."
             )
         return amount
-
-
-class AutoBidForm(forms.ModelForm):
-    class Meta:
-        model = AutoBid
-        fields = ['max_amount']
-        widgets = {
-            'max_amount': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Введите максимальную сумму',
-                'step': '1.00',
-                'min': '0.01'
-            }),
-        }
-
-    def __init__(self, *args, **kwargs):
-        self.lot = kwargs.pop('lot', None)
-        self.user = kwargs.pop('user', None)
-        super().__init__(*args, **kwargs)
-
-    def clean_max_amount(self):
-        max_amount = self.cleaned_data['max_amount']
-        if not self.lot:
-            raise forms.ValidationError("Лот не указан.")
-        min_amount = self.lot.initial_price
-        if self.lot.current_price:
-            min_amount = self.lot.current_price + self.lot.bid_step
-        else:
-            min_amount = self.lot.initial_price + self.lot.bid_step
-        if max_amount < min_amount:
-            raise forms.ValidationError(
-                f"Максимальная ставка должна быть не менее {min_amount} (текущая цена + шаг {self.lot.bid_step})."
-            )
-        return max_amount
-
 
 class CommentForm(forms.ModelForm):
     parent = forms.IntegerField(required=False, widget=forms.HiddenInput())

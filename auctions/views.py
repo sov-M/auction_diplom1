@@ -1,57 +1,16 @@
+# views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse
-from .models import Lot, Bid, Comment, AutoBid
-from .forms import LotForm, BidForm, CommentForm, AutoBidForm
+from .models import Lot, Bid, Comment
+from .forms import LotForm, BidForm, CommentForm
 from django.utils import timezone
 from django.contrib import messages
 from django.db.models import Q, Max, Count
 from datetime import timedelta
 from django.http import JsonResponse
 from django.db import transaction
-
-
-
-def process_auto_bids(lot):
-    """Обрабатывает автоматические ставки до достижения лимита, постепенно повышая на bid_step."""
-    while True:
-        auto_bids = lot.auto_bids.filter(max_amount__gt=lot.current_price or 0).order_by('-max_amount', 'created_at')
-        current_price = lot.current_price or lot.initial_price
-        bid_made = False
-
-        current_leader = lot.bids.order_by('-amount').first()
-        current_leader_id = current_leader.user.id if current_leader else None
-
-        for auto_bid in auto_bids:
-            if current_leader_id == auto_bid.user.id:
-                continue
-            if auto_bid.max_amount > current_price:
-                new_amount = min(current_price + lot.bid_step, auto_bid.max_amount)
-                if new_amount > current_price:
-                    with transaction.atomic():
-                        Bid.objects.create(
-                            lot=lot,
-                            user=auto_bid.user,
-                            amount=new_amount,
-                            is_auto=True
-                        )
-                        lot.current_price = new_amount
-                        lot.save()
-                        current_price = new_amount
-                        bid_made = True
-                        print(f"Auto bid placed: {auto_bid.user.username} - {new_amount}")
-
-                        time_to_end = lot.auction_end - timezone.now()
-                        last_bid = lot.bids.order_by('-created_at').first()
-                        if last_bid and time_to_end <= timedelta(minutes=5):
-                            lot.auction_end = last_bid.created_at + timedelta(minutes=5)
-                            lot.save()
-                            print(f"Auction extended to: {lot.auction_end}")
-
-        if not bid_made:
-            break
-
 
 class HomeView(View):
     def get(self, request):
@@ -189,10 +148,8 @@ class LotDetailView(View):
         lot = get_object_or_404(Lot.objects.prefetch_related('bids__user', 'comments__user', 'comments__replies'), pk=pk)
         is_author = request.user.is_authenticated and lot.created_by == request.user
         bid_form = BidForm(lot=lot) if request.user.is_authenticated and not is_author else None
-        auto_bid_form = AutoBidForm(lot=lot, user=request.user) if request.user.is_authenticated and not is_author else None
         comment_form = CommentForm() if request.user.is_authenticated else None
         unique_bidders = lot.bids.values('user__username').annotate(max_amount=Max('amount')).order_by('-max_amount')[:3]
-        user_auto_bid = AutoBid.objects.filter(lot=lot, user=request.user).first() if request.user.is_authenticated else None
         current_bid = lot.bids.filter(user=request.user).order_by('-amount').first() if request.user.is_authenticated else None
         root_comments = lot.comments.filter(parent__isnull=True)
 
@@ -202,7 +159,7 @@ class LotDetailView(View):
             not lot.has_bids() and 
             not lot.has_been_extended):
             lot.auction_end = timezone.now() + timedelta(minutes=30)
-            lot.has_been_extended = True  # Отмечаем, что продление выполнено
+            lot.has_been_extended = True
             lot.save()
             print(f"Lot {lot.id} ({lot.title}) extended to: {lot.auction_end}")
 
@@ -256,11 +213,9 @@ class LotDetailView(View):
             'lot': lot,
             'location': location,
             'bid_form': bid_form,
-            'auto_bid_form': auto_bid_form,
             'comment_form': comment_form,
             'is_author': is_author,
             'unique_bidders': unique_bidders,
-            'user_auto_bid': user_auto_bid,
             'current_bid': current_bid,
             'root_comments': root_comments,
         })
@@ -293,50 +248,37 @@ class LotDetailView(View):
                         lot.auction_end = last_bid.created_at + timedelta(minutes=5)
                         lot.save()
                         print(f"Auction extended to: {lot.auction_end}")
-                    process_auto_bids(lot)
                     messages.success(request, "Ставка успешно сделана.")
             else:
-                messages.error(request, "Ошибка в ставке: " + str(bid_form.errors))
-
-        elif 'auto_bid' in request.POST and not is_author:
-            auto_bid_form = AutoBidForm(request.POST, lot=lot, user=request.user)
-            if auto_bid_form.is_valid():
-                with transaction.atomic():
-                    AutoBid.objects.filter(lot=lot, user=request.user).delete()
-                    auto_bid = auto_bid_form.save(commit=False)
-                    auto_bid.lot = lot
-                    auto_bid.user = request.user
-                    auto_bid.save()
-                    current_price = lot.current_price or lot.initial_price
-                    current_leader = lot.bids.order_by('-amount').first()
-                    if not current_leader or current_leader.user != request.user:
-                        new_amount = current_price + lot.bid_step
-                        if auto_bid.max_amount >= new_amount:
-                            Bid.objects.create(
-                                lot=lot,
-                                user=request.user,
-                                amount=new_amount,
-                                is_auto=True
-                            )
-                            lot.current_price = new_amount
-                            lot.save()
-                            print(f"Initial auto bid placed: {request.user.username} - {new_amount}")
-                            time_to_end = lot.auction_end - timezone.now()
-                            last_bid = lot.bids.order_by('-created_at').first()
-                            if last_bid and time_to_end <= timedelta(minutes=5):
-                                lot.auction_end = last_bid.created_at + timedelta(minutes=5)
-                                lot.save()
-                                print(f"Auction extended to: {lot.auction_end}")
-                    process_auto_bids(lot)
-                    messages.success(request, "Автоматическая ставка установлена.")
-            else:
-                messages.error(request, "Ошибка в автоматической ставке: " + str(auto_bid_form.errors))
-
-        elif 'remove_auto_bid' in request.POST and not is_author:
-            with transaction.atomic():
-                AutoBid.objects.filter(lot=lot, user=request.user).delete()
-                messages.success(request, "Автоматическая ставка удалена.")
-                process_auto_bids(lot)
+                # Извлекаем текст ошибок без HTML
+                error_messages = []
+                for field, errors in bid_form.errors.items():
+                    for error in errors:
+                        error_messages.append(error)
+                messages.error(request, "Ошибка в ставке: " + " ".join(error_messages))
+                # Возвращаем страницу с формой, чтобы сохранить введённые данные
+                bid_form = BidForm(request.POST, lot=lot)
+                comment_form = CommentForm() if request.user.is_authenticated else None
+                unique_bidders = lot.bids.values('user__username').annotate(max_amount=Max('amount')).order_by('-max_amount')[:3]
+                current_bid = lot.bids.filter(user=request.user).order_by('-amount').first() if request.user.is_authenticated else None
+                root_comments = lot.comments.filter(parent__isnull=True)
+                location = lot.location_country
+                if lot.location_country and lot.location_city:
+                    location += ", " + lot.location_city
+                elif lot.location_city:
+                    location = lot.location_city
+                else:
+                    location = "Не указано"
+                return render(request, 'auctions/lot_detail.html', {
+                    'lot': lot,
+                    'location': location,
+                    'bid_form': bid_form,
+                    'comment_form': comment_form,
+                    'is_author': is_author,
+                    'unique_bidders': unique_bidders,
+                    'current_bid': current_bid,
+                    'root_comments': root_comments,
+                })
 
         elif 'comment' in request.POST:
             comment_form = CommentForm(request.POST)
@@ -414,7 +356,6 @@ class CreateLotView(LoginRequiredMixin, View):
             messages.success(request, "Лот успешно создан.")
             return redirect('home')
         return render(request, 'auctions/create_lot.html', {'form': form})
-
 
 class EditLotView(LoginRequiredMixin, View):
     def get(self, request, pk):
